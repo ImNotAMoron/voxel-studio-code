@@ -18,6 +18,8 @@ const targets = [
         entryPoints: ["src/extension.ts"],
         outfile: "dist/extension.js",
         platform: "node",
+        // jsonc-parser's UMD main breaks when bundled; use its ESM build
+        mainFields: ["module", "main"],
         format: "cjs",
         target: "node20",
         external: ["vscode"],
@@ -27,6 +29,8 @@ const targets = [
         entryPoints: ["server/src/server.ts"],
         outfile: "dist/server.js",
         platform: "node",
+        // jsonc-parser's UMD main breaks when bundled; use its ESM build
+        mainFields: ["module", "main"],
         format: "cjs",
         target: "node20",
     },
@@ -35,6 +39,8 @@ const targets = [
         entryPoints: ["server/src/cli.ts"],
         outfile: "dist/cli.js",
         platform: "node",
+        // jsonc-parser's UMD main breaks when bundled; use its ESM build
+        mainFields: ["module", "main"],
         format: "cjs",
         target: "node20",
         banner: { js: "#!/usr/bin/env node" },
@@ -48,6 +54,12 @@ const targets = [
         target: "es2022",
     },
 ];
+
+if (production) {
+    // drop stale source maps from dev builds so they don't end up in the .vsix
+    const fs = await import("node:fs");
+    fs.rmSync("dist", { recursive: true, force: true });
+}
 
 if (watch) {
     for (const options of targets) {

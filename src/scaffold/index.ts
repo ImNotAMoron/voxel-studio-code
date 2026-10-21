@@ -122,11 +122,11 @@ async function newBlock(hint?: vscode.Uri) {
     if (!pack) return;
     const name = await askUnitName("block", pack, "blocks");
     if (!name) return;
-    const kinds: { label: string; description: string; kind: t.BlockKind }[] = [
-        { label: "Basic", description: "one texture on all sides", kind: "basic" },
-        { label: "Six faces", description: "texture-faces: side / bottom / top", kind: "faces" },
-        { label: "Custom model", description: "models/<name>.vcm", kind: "model" },
-        { label: "Light source", description: "emission + shadeless", kind: "light" },
+    const kinds: { label: string; description: string; blockKind: t.BlockKind }[] = [
+        { label: "Basic", description: "one texture on all sides", blockKind: "basic" },
+        { label: "Six faces", description: "texture-faces: side / bottom / top", blockKind: "faces" },
+        { label: "Custom model", description: "models/<name>.vcm", blockKind: "model" },
+        { label: "Light source", description: "emission + shadeless", blockKind: "light" },
     ];
     const kind = await vscode.window.showQuickPick(kinds, { title: `Block ${pack.id}:${name}` });
     if (!kind) return;
@@ -136,11 +136,11 @@ async function newBlock(hint?: vscode.Uri) {
     if (!withScript) return;
 
     const files: FileSet = new Map();
-    files.set(`blocks/${name}.json`, t.blockJson(name, kind.kind, packHasBase(pack)));
-    for (const texture of t.blockTextureNames(name, kind.kind)) {
+    files.set(`blocks/${name}.json`, t.blockJson(name, kind.blockKind, packHasBase(pack)));
+    for (const texture of t.blockTextureNames(name, kind.blockKind)) {
         files.set(`textures/blocks/${texture}.png`, t.placeholderPng(texture));
     }
-    if (kind.kind === "model") files.set(`models/${name}.vcm`, t.blockModelVcm(name));
+    if (kind.blockKind === "model") files.set(`models/${name}.vcm`, t.blockModelVcm(name));
     if (withScript.startsWith("With")) files.set(`scripts/${name}.lua`, t.blockScript());
     const created = await writeFiles(pack.root, files);
     await addCaption(pack, name);

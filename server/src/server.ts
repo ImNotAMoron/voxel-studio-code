@@ -31,6 +31,7 @@ let settings: ServerSettings = {};
 let index = new ContentIndex();
 const schemas = new SchemaStore();
 let hasConfigurationCapability = false;
+let hasWorkspaceFoldersCapability = false;
 /** uri -> last published diagnostics count, to clear stale ones */
 const published = new Map<string, number>();
 /** documents whose content.json was edited in the editor */
@@ -197,6 +198,7 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
     const options = (params.initializationOptions ?? {}) as ServerSettings;
     settings = { resPath: options.resPath, lint: options.lint };
     hasConfigurationCapability = !!params.capabilities.workspace?.configuration;
+    hasWorkspaceFoldersCapability = !!params.capabilities.workspace?.workspaceFolders;
     workspaceRoots = (params.workspaceFolders ?? []).map((f) => uriToFile(f.uri)).filter((f): f is string => !!f);
     if (!workspaceRoots.length && params.rootUri) {
         const root = uriToFile(params.rootUri);
@@ -223,7 +225,7 @@ connection.onInitialized(() => {
         void connection.client.register(DidChangeConfigurationNotification.type, { section: "voxelcore" });
         void pullConfiguration();
     }
-    connection.workspace.onDidChangeWorkspaceFolders((event) => {
+    if (hasWorkspaceFoldersCapability) connection.workspace.onDidChangeWorkspaceFolders((event) => {
         const removed = new Set(event.removed.map((f) => uriToFile(f.uri)).filter(Boolean).map((f) => fileKey(f!)));
         workspaceRoots = workspaceRoots.filter((r) => !removed.has(fileKey(r)));
         for (const f of event.added) {

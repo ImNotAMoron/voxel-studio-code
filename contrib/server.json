@@ -1,0 +1,23 @@
+{
+  "contributes": {
+    "configuration": {
+      "properties": {
+        "voxelcore.lint.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the VoxelCore pack linter (vcls diagnostics for definitions, Lua scripts, VCM models and VCA animations)."
+        },
+        "voxelcore.lint.rules": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Per-rule severity overrides, e.g. `{ \"VC0060\": \"off\", \"VC0020\": \"error\" }`. Run `node dist/cli.js rules` for the rule list.",
+          "propertyNames": { "pattern": "^VC\\d{4}$" },
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["error", "warning", "information", "hint", "off"]
+          }
+        }
+      }
+    }
+  }
+}

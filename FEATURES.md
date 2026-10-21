@@ -1,9 +1,37 @@
 # VoxelCore Content-Pack Tooling for VS Code — Feature Plan
 
-Status: **planning (part 1 — preparation)**. Nothing here is implemented yet.
 This file lists what a content-pack developer needs from the editor, and
 explains how each feature will be built with the VS Code extension API, with
-pointers to the engine code that is the source of truth for it.
+pointers to the engine code that is the source of truth for it. For the code
+as built, see [ARCHITECTURE.md](ARCHITECTURE.md); for working on it, see
+[AGENTS.md](AGENTS.md).
+
+## Implementation status
+
+Updated 2026-10-22. **MVP (all P0) done.** Keep this table current when you
+change a feature.
+
+| § | Feature | Status | Notes / deviations from the design below |
+|---|---|---|---|
+| 3.1 | Schemas | ✅ done | 21 generated schemas. TOML schemas and pack roots outside `content/` are wired through workspace settings (`src/schemas/`) because `tomlValidation` can't take relative URLs. No Russian descriptions yet |
+| 3.2 | Lua API | ✅ done | `meta/` (680 functions) + sumneko.lua config. Per-script-kind checks in vcls. Callbacks aren't in `meta/` |
+| 3.3 | Pack linter | ✅ done | ~70 rules (VC0001–VC0226) + CLI. Missing: translucency hint, locale and XML checks |
+| 3.4 | VCM / VCA | ✅ done | **Deviation:** structure comes from the TypeScript parser `shared/vcm/parser.ts` (mirrors the engine), not tree-sitter. TextMate highlighting. No formatter or inlay hints yet |
+| 3.5 | Navigation | 🟡 partial | definition, completion, document symbols. Missing: references, rename, workspace symbols, code lens |
+| 3.6 | Locale files | ⬜ todo | keys are indexed by `ContentIndex` |
+| 3.7 | XML layouts | ⬜ todo | |
+| 3.8 | Snippets + scaffolding | 🟡 partial | snippets + *New Pack/Block/Item/Entity/Component*. Missing: walkthrough, generator scaffold |
+| 3.9 | Asset hovers | ⬜ todo | vcls hover resolves ids but shows no images yet |
+| 3.10 | Content explorer | ⬜ todo | |
+| 4.1 | Run in engine | ✅ done | `voxelcore` task type (`run` / `quickWorld` / `headless`), pack junctions in the dev user dir |
+| 4.2 | Hot reload | ⬜ todo | |
+| 4.3 | Log → Problems | ⬜ todo | the `VoxelCore` output channel exists |
+| 4.4 | Debugger | ⬜ todo | |
+| 4.5 | Test explorer | ⬜ todo | *Run Lua Script Headless* command exists |
+| 4.6 | Console bridge | ⬜ todo | |
+| 5.1 | Model preview | ✅ done | VCM, OBJ, vec3 (custom editor), golden-tested against the engine loaders. No VCM-XML; no thumbnails |
+| 5.2–5.7 | Other previews | ⬜ todo | reuse `shared/models` + `webview/` |
+| 6.x | Other | ⬜ todo | |
 
 This is the VS Code port of [`../zed-extension/FEATURES.md`](../zed-extension/FEATURES.md).
 The language server and debug adapter described here are editor-independent

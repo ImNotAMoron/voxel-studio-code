@@ -1,6 +1,7 @@
 // Model preview (FEATURES.md §5.1): a three.js webview beside .vcm/.obj
 // editors (live, selection-synced) and a read-only custom editor for .vec3.
 
+import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 
@@ -16,6 +17,23 @@ const VEC3_VIEW_TYPE = "voxelcore.vec3Preview";
 const UPDATE_DELAY = 50;
 
 let textureVersion = 0;
+
+const MAX_INLINE_TEXTURE = 1024 * 1024;
+
+/**
+ * Textures are inlined as data URIs, so WebGL never depends on the webview
+ * resource server's CORS headers. Large files fall back to webview URIs.
+ */
+function textureUrl(webview: vscode.Webview, file: string): string {
+    try {
+        if (fs.statSync(file).size <= MAX_INLINE_TEXTURE) {
+            return `data:image/png;base64,${fs.readFileSync(file).toString("base64")}`;
+        }
+    } catch {
+        // fall through: let the webview report the missing file
+    }
+    return webview.asWebviewUri(vscode.Uri.file(file)).toString();
+}
 
 function nonce(): string {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -135,7 +153,7 @@ class ModelView implements vscode.Disposable {
         const files = this.uri.scheme === "file" ? resolveTextures(modelTextures(model), this.uri.fsPath, resPath) : {};
         const textures: Record<string, string> = {};
         for (const [name, file] of Object.entries(files)) {
-            textures[name] = this.webview.asWebviewUri(vscode.Uri.file(file)).toString();
+            textures[name] = textureUrl(this.webview, file);
         }
         this.post({
             type: "model",

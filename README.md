@@ -17,7 +17,7 @@ live 3D model preview, and one-click runs in the engine.
   `fields` size, `state-based`); misspelled Lua callbacks (`on_place`);
   engine-only libraries used in world-generator scripts; unresolved
   `require`; and more. Also available as a CLI for CI:
-  `node dist/cli.js lint <packDir>`.
+  `node dist/cli.js lint <packDir> [--res <engine res>]`.
 - **Lua API**: definitions for every engine library (`block`, `world`,
   `entities`, `gui`, `gfx.*`, …) generated from the engine docs, wired
   into the [Lua](https://marketplace.visualstudio.com/items?itemName=sumneko.lua)
@@ -68,6 +68,7 @@ npm run gen        # regenerate schemas/ and meta/ from the engine repo (..)
 npm run contrib    # merge contrib/*.json into package.json
 npm run build      # bundle to dist/
 npm test           # unit + engine integration tests (uses ../build/Debug/VoxelCore if present)
+npm run test:vscode  # smoke test inside the installed VS Code (extension host)
 npm run package    # build a .vsix
 ```
 

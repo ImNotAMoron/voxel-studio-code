@@ -4,5 +4,5 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": []
   },
-  "include": ["src", "../shared"]
+  "include": ["src", "../shared/models", "../shared/vcm"]
 }

@@ -1,134 +1,121 @@
-# Architecture & contracts (MVP)
+# Architecture
 
-Implementation guide for `vscode-extension/`. The feature plan is
-[FEATURES.md](FEATURES.md); this file pins down **who owns what** and the
-interfaces between parts so they can be built in parallel.
+How `vscode-extension/` is put together. Start with [AGENTS.md](AGENTS.md)
+for commands and rules, and [FEATURES.md](FEATURES.md) for the roadmap.
 
-MVP = the P0 features of FEATURES.md: §3.1 schemas, §3.2 Lua API, §3.3 pack
-linter, §3.4 VCM/VCA support, §3.8 snippets + scaffolding, §4.1 run in engine,
-§5.1 model preview.
+## Processes and bundles
 
-## Layout and ownership
+```
+VS Code extension host ── dist/extension.js (src/extension.ts)
+   │  LanguageClient (IPC)          ▲ postMessage
+   ▼                                │
+vcls language server ── dist/server.js      webview (iframe) ── dist/webview.js
+   (server/src/server.ts)                     (webview/src/main.ts, three.js)
 
-| Path | Owner / area | Contents |
+CLI linter ── dist/cli.js (server/src/cli.ts), same rules as vcls
+Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run)
+```
+
+`esbuild.mjs` builds all four bundles: node targets as CJS with
+`mainFields: ["module","main"]`, the webview as a browser IIFE.
+
+## Layout
+
+| Path | Area | Contents |
 |---|---|---|
-| `package.json`, `esbuild.mjs`, `tsconfig.json` | integration | manifest; **do not edit from other areas**: put manifest additions in `contrib/<area>.json` (see below) |
-| `src/extension.ts` | integration | activation; calls each area's `register*` function |
-| `src/run/`, `src/scaffold/` | integration | engine runner TaskProvider, pack linking, scaffolding commands |
-| `syntaxes/`, `languages/`, `snippets/`, `templates/` | integration | TextMate grammars, language configs, snippets, scaffold templates |
-| `shared/vcm/parser.ts` | integration (done) | VCM/VCA text → AST with offsets. Read-only for others; report bugs |
-| `tools/gen-lua-meta.mjs`, `meta/`, `src/lua/` | **lua** | generated LuaLS `---@meta` files + sumneko.lua configuration |
-| `tools/gen-schemas.mjs`, `schemas/` | **schemas** | generated JSON Schemas + `schemas/catalog.json` |
-| `shared/models/`, `webview/`, `src/preview/` | **preview** | mesh builders (VCM, OBJ, vec3), three.js webview, preview panel controller |
-| `server/src/`, `shared/content/` | **server** | `vcls` language server + CLI linter, workspace content index |
-| `test/<area>/*.test.ts` | each area | unit tests, run with `npm test` (`node --import tsx --test`) |
+| `src/extension.ts` | integration | activation: calls every `register*`, starts the LanguageClient, sets the `voxelcore.hasPacks` context key |
+| `src/packs.ts`, `src/packs.manifest.ts` | integration | finds workspace packs, the engine `res/` and the executable (`findWorkspacePacks`, `findResPath`, `findExecutable`, `pickPack`, `packRootOf`) |
+| `src/scaffold/` | integration | *New Pack/Block/Item/Entity/Component* commands; `templates.ts` is pure |
+| `src/run/` | integration | `voxelcore` TaskProvider (CustomExecution pseudoterminal), run commands, status bar; `userdir.ts`: pack junctions/symlinks + quick-world app script |
+| `src/schemas/` | integration | TOML schema associations + pack-root `json.schemas` (workspace settings, with consent) |
+| `src/lua/` | lua | configures `sumneko.lua` (`Lua.workspace.library` → `meta/`, globals, runtime); `settings.ts` is pure |
+| `src/preview/` | preview | model preview panel, `.vec3` custom editor, texture resolver |
+| `shared/vcm/parser.ts` | integration | VCM/VCA text → AST with offsets (mirrors `xml::VcmParser`) |
+| `shared/models/` | preview | mesh builders `vcm.ts`, `obj.ts`, `vec3.ts` (ports of engine loaders), `protocol.ts` (host↔webview messages), `selection.ts` |
+| `shared/content/` | server | `ContentIndex`: the workspace model of packs and units; `pack.ts` (id/dependency/version helpers, Levenshtein), `json.ts` (tolerant engine-JSON reader) |
+| `server/src/` | server | `server.ts` (LSP), `cli.ts`, `linter.ts` (runs rules), `schemas.ts` (loads `schemas/` for keys/quick fixes), `rules/*` (lint rules + registry), `lua/` (script-kind spec, luaparse analysis), `vcm/spec.ts` (VCM/VCA element/attribute spec), `features/*` (completion, hover, definition, symbols, code actions) |
+| `webview/src/` | preview | `viewer.ts` (three.js scene), `panel.ts` (side panel), `placeholders.ts` |
+| `tools/` | — | `gen-schemas.mjs` + `schema-overlay/`, `gen-lua-meta.mjs`, `merge-contrib.mjs`, `vscode-smoke.mjs` |
+| `schemas/`, `meta/` | generated | JSON Schemas + `catalog.json`; LuaLS `---@meta` files + `libraries.json`. **Committed** |
+| `contrib/*.json` | each area | manifest fragments merged into `package.json` |
+| `syntaxes/`, `languages/`, `snippets/`, `media/` | integration/preview | TextMate grammars, language config, snippets, webview CSS |
+| `test/<area>/` | each area | node:test suites; `test/vscode/suite.js` runs inside a real VS Code |
 
-## Manifest fragments
+## Data flow per feature
 
-Each area may add `contrib/<area>.json` with this shape:
+- **Schemas.** `tools/gen-schemas.mjs` reads the C++ loaders (the keys
+  actually read, enums, defaults), `doc/en/*.md` (descriptions) and
+  `tools/schema-overlay/*` (shapes). It writes `schemas/*.schema.json` +
+  `catalog.json` + `contrib/schemas.json` (`jsonValidation`). The generator
+  exits 1 if a loader key is missing from a schema; `--check` detects stale
+  output. VS Code's JSON service then validates with no server. TOML schemas
+  and pack roots outside `content/` go through `src/schemas/`.
+- **Lua.** `tools/gen-lua-meta.mjs` parses `doc/en/scripting/**` signatures,
+  cross-checks the `luaL_Reg` tables in `src/logic/scripting/lua/libs/*.cpp`,
+  and writes `meta/*.lua` + `meta/libraries.json` (functions, plus the
+  `states` each library exists in). `src/lua` points sumneko.lua at
+  `meta/`. vcls adds what LuaLS can't express: per-script-kind callbacks,
+  generator-state library restrictions, `require` resolution.
+- **Linter (vcls).** `ContentIndex` scans packs: workspace folders with a
+  pack `package.json`, plus engine `res/` as `core` and `res/content/*`. It
+  is updated incrementally from didChange (overlay text) and watched-file
+  events. `linter.ts` runs the `rules/*` per file and publishes
+  diagnostics: open documents on change, the whole workspace on start and on
+  file events. Rule ids: VC0001–0007 pack, VC0010–0013 silent drops,
+  VC0020–0040 references, VC0050–0058 values, VC0060–0063 hygiene,
+  VC0100–0106 Lua, VC0200–0209 VCM, VC0220–0226 VCA (`node dist/cli.js
+  rules`). Settings: `voxelcore.lint.enable`, `voxelcore.lint.rules`
+  (id → severity | `off`). Unknown JSON keys are reported by VS Code's JSON
+  service in the editor, and by vcls only in the CLI.
+- **Preview.** `src/preview` debounces `onDidChangeTextDocument` (50 ms),
+  builds `ModelData` with `shared/models`, resolves textures
+  (`src/preview/textures.ts`: pack → engine `res/` → `base`) into data URIs
+  and posts `{type:"model"}`. Cursor moves post `{type:"highlight"}`; a
+  click in the webview posts `{type:"select", span}` and the host reveals
+  that range. Golden fixtures (`test/preview/fixtures/golden.json`) come
+  from the engine's real loaders through the C++ dumper.
+- **Run.** The `voxelcore` task (actions `run` / `quickWorld` / `headless`)
+  links non-built-in workspace packs into `<userDir>/content/<id>`, writes a
+  `--script` app script for quick worlds (`app.reconfig_packs`,
+  `app.new_world` / `app.open_world`) and spawns the engine with
+  `--res/--dir`. The default user dir lives in the extension's workspace
+  storage.
 
-```json
-{
-  "contributes": { "commands": [...], "configuration": { "properties": {...} }, "...": [...] },
-  "activationEvents": ["onCommand:..."],
-  "dependencies": { "pkg": "^1.0.0" }
-}
-```
+## Client ↔ server contract
 
-`npm run contrib` (`tools/merge-contrib.mjs`) merges all fragments into
-`package.json`. Arrays are concatenated, objects merged, and
-`configuration.properties` merged. Only `contrib/integration.json` may set
-top-level fields other than the three above.
+- Document selector: `file` scheme, languages `json`, `jsonc`, `toml`, `lua`,
+  `vcm`, `vca`.
+- `initializationOptions` and `workspace/configuration` (section
+  `voxelcore`): `{ resPath, lint: { enable, rules } }`. `resPath` is
+  auto-detected on the client side.
+- File watcher: `**/*.{json,toml,lua,vcm,vca,txt,png,ogg,wav,obj,vec3,xml,vox}`.
+- The server-side command `voxelcore.server.createTexture` is registered by
+  the server through `executeCommandProvider`. The client must not register
+  it.
 
-## Build & test
+## Engine facts the code relies on
 
-- `npm run build`: esbuild bundles `src/extension.ts` → `dist/extension.js`,
-  `server/src/server.ts` → `dist/server.js`, `server/src/cli.ts` →
-  `dist/cli.js`, and `webview/src/main.ts` → `dist/webview.js`.
-- `npm run typecheck`: strict TypeScript for host code and the webview.
-- `npm test`: unit tests. They must not need VS Code; keep `vscode` imports
-  out of `shared/` and `server/`.
-- `npm run gen`: regenerates `schemas/` and `meta/` from the engine repo. The
-  generators locate the engine root as `..` (this folder lives in the
-  VoxelCore repo) or via the `VOXELCORE_ROOT` env var. **Generated files are
-  committed**, so the extension works without the engine sources.
+- Content ids are `packid:name`; each block gets item `packid:name.item`.
+- A definition file in `blocks/<sub>/x.json` gets the id `<sub>:x`
+  (`ContentLoader.cpp::detect_defs`). Files starting with `_` are skipped.
+- Unknown block/item properties are dropped by `res/scripts/post_content.lua`.
+- Captions/locale keys: the name with `_` → space (`util::id_to_caption`).
+- Attribute vectors without commas broadcast to all components; `shading` is
+  on unless it's literally `off`.
+- PNGs load bottom-up (`png.cpp`), equivalent to three.js `flipY = true`.
+- Content sources: `world:content`, `user:content`, `project:content`,
+  `res:content`. That's why runs link packs into `<userDir>/content`.
 
-Installed packages: `three`, `jsonc-parser`, `smol-toml`, `luaparse`,
-`pngjs`, `vscode-languageclient`, `vscode-languageserver`,
-`vscode-languageserver-textdocument`; dev: `typescript`, `esbuild`, `tsx`,
-`@types/*`, `@vscode/vsce`. Ask integration before adding others.
+## Known gaps (as of the MVP)
 
-## Interfaces
-
-### Area entry points (called from `src/extension.ts`)
-
-```ts
-// src/lua/index.ts
-export function registerLua(context: vscode.ExtensionContext): void;
-// src/preview/index.ts
-export function registerPreview(context: vscode.ExtensionContext): void;
-// language client lives in src/extension.ts; server is dist/server.js (stdio/IPC)
-```
-
-### VCM AST (`shared/vcm/parser.ts`)
-
-`parseVcm(text) → { elements: VcmElement[], errors }`. Each element has `tag`,
-`attributes[] {name, value, kind, nameSpan, valueSpan}`, `children`, and
-spans as **string offsets**. Values match what the engine sees: quotes and
-outer parens are removed. Number lists are parsed with `parseNumbers`.
-
-Engine attribute semantics that consumers must respect (`src/coders/xml.cpp`):
-- `asVec3` / `asVec4`: a value **without commas is broadcast** to all
-  components (`scale 2` = `(2,2,2)`). With commas, exactly 3 / 4 parts are
-  required.
-- `shading`: anything other than the literal `off` means on.
-
-### Content index (`shared/content/`, owned by server)
-
-The workspace model of packs is used by the server, and later by the
-extension host (preview texture resolution). Minimum API:
-
-```ts
-interface PackInfo { id: string; root: string /* abs fs path */; title?: string; dependencies: string[]; builtin: boolean }
-interface ContentIndex {
-  packs: Map<string, PackInfo>;
-  resolveTexture(atlas: "blocks"|"items"|string, name: string, fromPack?: string): string | undefined; // abs path to png
-  resolveModel(name: string, fromPack?: string): string | undefined;
-  // blocks, items, entities, materials, skeletons, components, sounds, user props …
-}
-```
-
-Packs: every folder with a pack-shaped `package.json` (has `id`) in the
-workspace, plus the engine `res/` (the `core` pack) and `res/content/*`
-(built-in packs such as `base`). `res/` is found from the
-`voxelcore.resPath` setting, else by auto-detection (a workspace folder or an
-ancestor containing `res/content/base/package.json`).
-
-### Settings (namespace `voxelcore`)
-
-| Setting | Owner | Meaning |
-|---|---|---|
-| `voxelcore.resPath` | integration | engine `res/` folder |
-| `voxelcore.executable` | integration | VoxelCore executable |
-| `voxelcore.userDir` | integration | dev user dir for runs |
-| `voxelcore.configureLua` | lua | `ask` / `always` / `never` |
-| `voxelcore.lint.enable` | server | boolean |
-
-The client passes `resPath` to the server in `initializationOptions` and in
-`workspace/didChangeConfiguration`.
-
-## Engine facts every area needs
-
-- Content ids are `packid:name`; a block automatically has item
-  `packid:name.item`.
-- Definition files: `blocks|items|entities/<name>.json`. Subfolders give ids
-  `<subdir>:<name>`? **No.** See `ContentLoader.cpp::detect_defs`: a subfolder
-  name becomes a prefix inside the pack's name (`detect_defs(file, name, …)`).
-  Verify before relying on it. Files starting with `_` are skipped.
-- Unknown block/item properties are silently dropped by
-  `res/scripts/post_content.lua`, which is why the linter matters.
-- Texture names: block textures live in `textures/blocks/<name>.png` (atlas
-  `blocks`), items in `textures/items/` (atlas `items`), and other textures
-  are addressed by path (`entities/tireman:face_0` = atlas `entities/tireman`).
-- PNGs are loaded bottom-up by the engine (`src/coders/png.cpp`), which
-  affects UV orientation.
+- Linter: no XML layout or locale checks; hitbox checks ignore rotation;
+  assets resolve against every indexed pack, not only declared
+  dependencies; cross-file effects of an edit refresh on save.
+- Lua: `require "pack:mod"` isn't resolvable by LuaLS (vcls handles
+  definitions/diagnostics); event callbacks aren't in `meta/`; some return
+  types are inferred.
+- Preview: no VCM-XML models; clicking a box selects the `@box`, not the
+  `@part`; texture lookup ignores pack dependencies.
+- Not yet verified by hand in VS Code: visible texture rendering in the
+  preview, and the sumneko.lua integration (the smoke test runs with an
+  isolated extensions dir).

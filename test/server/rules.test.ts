@@ -80,7 +80,7 @@ const EXPECTED: [string, string, RegExp?][] = [
     ["VC0058", "errpack/blocks/custom.json"],
     ["VC0060", "errpack/textures/blocks/unused_tex.png"],
     ["VC0061", "errpack/sounds/unused_snd.ogg"],
-    ["VC0062", "errpack/models/bad.vcm"],
+    ["VC0062", "errpack/models/lonely.vcm"],
     ["VC0063", "errpack/scripts/orphan.lua"],
     ["VC0100", "errpack/scripts/syntax.lua"],
     ["VC0101", "errpack/scripts/scripted.lua", /Did you mean 'on_placed'/],
