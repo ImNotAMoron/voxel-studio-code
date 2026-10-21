@@ -1,0 +1,10 @@
+{
+    "sounds": [
+        "nope/sound",
+        "blocks/door_open"
+    ],
+    "layouts": [
+        "x"
+    ],
+    "foo": []
+}

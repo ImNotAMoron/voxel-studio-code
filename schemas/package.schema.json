@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/package.schema.json",
+  "title": "VoxelCore content pack (package.json)",
+  "description": "Content pack definition file read by ContentPack::read (src/content/ContentPack.cpp).",
+  "markdownDescription": "Content pack definition file read by `ContentPack::read` (`src/content/ContentPack.cpp`).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]{1,23}$",
+      "minLength": 2,
+      "maxLength": 24,
+      "not": {
+        "enum": [
+          "res",
+          "abs",
+          "local",
+          "core",
+          "user",
+          "world",
+          "none",
+          "null",
+          "project",
+          "pack",
+          "packid",
+          "root"
+        ]
+      },
+      "errorMessage": "This pack id is reserved: res, abs, local, core, user, world, none, null, project, pack, packid, root.",
+      "patternErrorMessage": "Pack id: letters, digits and _, not starting with a digit, 2..24 characters.",
+      "markdownDescription": "Pack id: letters `A-Z a-z`, digits and `_`; must not start with a digit; length 2..24. Reserved ids are rejected. It is also the pack's mount point (`id:path`).",
+      "description": "Pack id: letters A-Z a-z, digits and _; must not start with a digit; length 2..24. Reserved ids are rejected. It is also the pack's mount point (id:path)."
+    },
+    "title": {
+      "type": "string",
+      "markdownDescription": "Pack name shown in the content menu.",
+      "description": "Pack name shown in the content menu."
+    },
+    "version": {
+      "type": "string",
+      "markdownDescription": "Pack version, `major.minor[.patch]`.",
+      "description": "Pack version, major.minor[.patch]."
+    },
+    "creator": {
+      "type": "string",
+      "markdownDescription": "Pack author. Ignored when `creators` is present.",
+      "description": "Pack author. Ignored when creators is present."
+    },
+    "creators": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "markdownDescription": "List of authors (joined with `, `). Takes precedence over `creator`.",
+      "description": "List of authors (joined with , ). Takes precedence over creator."
+    },
+    "description": {
+      "type": "string",
+      "markdownDescription": "Short description.",
+      "description": "Short description."
+    },
+    "source": {
+      "type": "string",
+      "markdownDescription": "Source / homepage URL of the pack.",
+      "description": "Source / homepage URL of the pack."
+    },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[!?~]?[A-Za-z_][A-Za-z0-9_]{1,23}(@(>=|<=|>|<)?[^@s]+)?$",
+        "errorMessage": "Expected [!|?|~]pack_id[@[>=|<=|>|<]version], e.g. \"base\", \"~randutil\", \"randutil@>=1.0\"."
+      },
+      "defaultSnippets": [
+        {
+          "label": "dependency",
+          "body": [
+            "${1:base}"
+          ]
+        }
+      ],
+      "markdownDescription": "Pack dependencies. Prefix: `!` required (default), `?` optional, `~` weak. A version constraint follows `@` with an optional operator `>=`, `<=`, `>` or `<` (none = exact, `*` = any): `randutil@>=1.0`.",
+      "description": "Pack dependencies. Prefix: ! required (default), ? optional, ~ weak. A version constraint follows @ with an optional operator >=, <=, > or < (none = exact, * = any): randutil@>=1.0."
+    }
+  }
+}

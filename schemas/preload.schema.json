@@ -1,0 +1,317 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/preload.schema.json",
+  "title": "VoxelCore preload.json",
+  "description": "Assets to preload (<pack>/preload.json), read by AssetsLoader::processPreloadConfig. Only list assets that aren't loaded automatically (layouts, block/item textures and models of content units load by themselves).",
+  "markdownDescription": "Assets to preload (`<pack>/preload.json`), read by `AssetsLoader::processPreloadConfig`. Only list assets that aren't loaded automatically (layouts, block/item textures and models of content units load by themselves).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "animation": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: textures/<name>)."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "Texture animations. Entries are names relative to `textures/` (no extension) or objects with options.",
+      "description": "Texture animations. Entries are names relative to textures/ (no extension) or objects with options."
+    },
+    "atlases": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: textures/<name>)."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "atlas",
+                  "separate"
+                ],
+                "default": "atlas",
+                "description": "atlas: pack the folder into one atlas; separate: keep the textures separate."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "Texture atlases built from a folder of `textures/`. Entries are names relative to `textures/` (no extension) or objects with options.",
+      "description": "Texture atlases built from a folder of textures/. Entries are names relative to textures/ (no extension) or objects with options."
+    },
+    "fonts": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: fonts/<name>)."
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Font size in pixels."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "Fonts. Entries are names relative to `fonts/` (no extension) or objects with options.",
+      "description": "Fonts. Entries are names relative to fonts/ (no extension) or objects with options."
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: models/<name>)."
+              },
+              "squash": {
+                "type": "boolean",
+                "default": false,
+                "description": "Merge the model's meshes into one."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "3D models. Entries are names relative to `models/` (no extension) or objects with options.",
+      "description": "3D models. Entries are names relative to models/ (no extension) or objects with options."
+    },
+    "post-effects": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: shaders/effects/<name>)."
+              },
+              "advanced": {
+                "type": "boolean",
+                "default": false,
+                "description": "Advanced post-effect (needs the advanced render pipeline, e.g. ssao)."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "Post-processing effects. Entries are names relative to `shaders/effects/` (no extension) or objects with options.",
+      "description": "Post-processing effects. Entries are names relative to shaders/effects/ (no extension) or objects with options."
+    },
+    "shaders": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: shaders/<name>)."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "Shaders (`.glslv`/`.glslf` pairs). Entries are names relative to `shaders/` (no extension) or objects with options.",
+      "description": "Shaders (.glslv/.glslf pairs). Entries are names relative to shaders/ (no extension) or objects with options."
+    },
+    "skeletons": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: skeletons/<name>)."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "Skeletons (normally loaded automatically). Entries are names relative to `skeletons/` (no extension) or objects with options.",
+      "description": "Skeletons (normally loaded automatically). Entries are names relative to skeletons/ (no extension) or objects with options."
+    },
+    "sounds": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: sounds/<name>)."
+              },
+              "keep-pcm": {
+                "type": "boolean",
+                "default": false,
+                "description": "Keep decoded PCM data in memory (needed by scripts that read samples)."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "Sounds; `name` loads `name.ogg`, `name_1.ogg`, `name_2.ogg`, ... as variants. Entries are names relative to `sounds/` (no extension) or objects with options.",
+      "description": "Sounds; name loads name.ogg, name_1.ogg, name_2.ogg, ... as variants. Entries are names relative to sounds/ (no extension) or objects with options."
+    },
+    "textures": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Asset name (also the default path inside the category folder)."
+              },
+              "path": {
+                "type": "string",
+                "description": "File path relative to the pack (default: textures/<name>)."
+              }
+            }
+          }
+        ]
+      },
+      "markdownDescription": "Standalone textures. Entries are names relative to `textures/` (no extension) or objects with options.",
+      "description": "Standalone textures. Entries are names relative to textures/ (no extension) or objects with options."
+    }
+  },
+  "definitions": {
+    "entry": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Asset name (also the default path inside the category folder)."
+        },
+        "path": {
+          "type": "string",
+          "description": "File path relative to the pack."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

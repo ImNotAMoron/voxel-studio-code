@@ -1,0 +1,7 @@
+{
+    "components": [
+        "errpack_x:nocomp",
+        "nocolon"
+    ],
+    "skeleton-name": "errpack_x:noskel"
+}

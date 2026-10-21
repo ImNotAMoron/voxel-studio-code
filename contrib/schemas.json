@@ -1,0 +1,94 @@
+{
+  "contributes": {
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "**/block_materials/*.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/block-material.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/blocks/**/*.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/block.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/content/*/content.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/content.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/entities/**/*.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/entity.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/items/**/*.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/item.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/content/*/package.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/package.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/preload.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/preload.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/resource-aliases.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/resource-aliases.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/resources.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/resources.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/skeletons/*.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/skeleton.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/presets/weather/*.json",
+          "!**/node_modules/**",
+          "!**/.vscode/**"
+        ],
+        "url": "./schemas/weather-preset.schema.json"
+      }
+    ]
+  }
+}

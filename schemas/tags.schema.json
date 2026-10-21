@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/tags.schema.json",
+  "title": "VoxelCore tags.toml",
+  "description": "Attaches tags to blocks and items of any pack (<pack>/tags.toml): \"prefix:tag\" = [\"pack:block\", ...]. Tagging a block also tags its generated item.",
+  "markdownDescription": "Attaches tags to blocks and items of any pack (`<pack>/tags.toml`): `\"prefix:tag\" = [\"pack:block\", ...]`. Tagging a block also tags its generated item.",
+  "type": "object",
+  "additionalProperties": {
+    "type": "array",
+    "items": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*:\\S+$"
+    },
+    "description": "Block or item ids receiving the tag."
+  }
+}

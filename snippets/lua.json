@@ -1,0 +1,136 @@
+{
+  "VoxelCore module": {
+    "prefix": "vc-module",
+    "description": "Module (modules/<name>.lua), loaded with require \"pack:name\"",
+    "body": [
+      "local this = {}",
+      "",
+      "function this.${1:name}(${2})",
+      "\t$0",
+      "end",
+      "",
+      "return this"
+    ]
+  },
+  "VoxelCore block script": {
+    "prefix": "vc-block-script",
+    "description": "Block event handlers (scripts/<block>.lua)",
+    "body": [
+      "function on_placed(x, y, z, playerid)",
+      "\t$0",
+      "end",
+      "",
+      "function on_broken(x, y, z, playerid)",
+      "end",
+      "",
+      "function on_interact(x, y, z, playerid)",
+      "\treturn false",
+      "end"
+    ]
+  },
+  "VoxelCore block tick": {
+    "prefix": "vc-block-tick",
+    "description": "on_block_tick handler (use tick-interval in the block json)",
+    "body": [
+      "function on_block_tick(x, y, z, tps)",
+      "\t$0",
+      "end"
+    ]
+  },
+  "VoxelCore item script": {
+    "prefix": "vc-item-script",
+    "description": "Item event handlers (scripts/<item>.lua)",
+    "body": [
+      "function on_use(playerid)",
+      "\t$0",
+      "end",
+      "",
+      "function on_use_on_block(x, y, z, playerid, normal)",
+      "\treturn false",
+      "end"
+    ]
+  },
+  "VoxelCore world script": {
+    "prefix": "vc-world-script",
+    "description": "World events (scripts/world.lua)",
+    "body": [
+      "function on_world_open()",
+      "\t$0",
+      "end",
+      "",
+      "function on_world_tick()",
+      "end",
+      "",
+      "function on_world_save()",
+      "end",
+      "",
+      "function on_world_quit()",
+      "end"
+    ]
+  },
+  "VoxelCore hud script": {
+    "prefix": "vc-hud-script",
+    "description": "HUD events (scripts/hud.lua)",
+    "body": [
+      "function on_hud_open(playerid)",
+      "\t$0",
+      "end",
+      "",
+      "function on_hud_render()",
+      "end",
+      "",
+      "function on_hud_close(playerid)",
+      "end"
+    ]
+  },
+  "VoxelCore component": {
+    "prefix": "vc-component",
+    "description": "Entity component (scripts/components/<name>.lua)",
+    "body": [
+      "local tsf = entity.transform",
+      "local body = entity.rigidbody",
+      "",
+      "function on_update(tps)",
+      "\t$0",
+      "end",
+      "",
+      "function on_save()",
+      "\tSAVED_DATA.${1:value} = ${2:nil}",
+      "end"
+    ]
+  },
+  "VoxelCore layout script": {
+    "prefix": "vc-layout-script",
+    "description": "Layout events (layouts/<name>.xml.lua)",
+    "body": [
+      "function on_open(invid, x, y, z)",
+      "\t$0",
+      "end",
+      "",
+      "function on_close(invid)",
+      "end"
+    ]
+  },
+  "VoxelCore generator script": {
+    "prefix": "vc-generator-script",
+    "description": "World generator script (generators/<name>.files/script.lua)",
+    "body": [
+      "function generate_heightmap(x, y, w, h, bpd, inputs)",
+      "\tlocal map = Heightmap(w, h)",
+      "\tmap.noiseSeed = SEED",
+      "\tmap:noise({x, y}, 0.02 * bpd, 4)",
+      "\t$0",
+      "\treturn map",
+      "end"
+    ]
+  },
+  "VoxelCore event handler": {
+    "prefix": "vc-events-on",
+    "description": "Subscribe to a named event",
+    "body": [
+      "events.on(\"${1:$WORKSPACE_NAME}:${2:event}\", function(${3:...})",
+      "\t$0",
+      "end)"
+    ]
+  }
+}

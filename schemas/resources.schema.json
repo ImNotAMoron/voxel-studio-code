@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/resources.schema.json",
+  "title": "VoxelCore resources.json",
+  "description": "Resource requests (<pack>/resources.json): lists of names per resource type. Names get the pack prefix (cinematic in pack base becomes base:cinematic). Unknown types are ignored with a warning.",
+  "markdownDescription": "Resource requests (`<pack>/resources.json`): lists of names per resource type. Names get the pack prefix (`cinematic` in pack `base` becomes `base:cinematic`). Unknown types are ignored with a warning.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "camera": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "markdownDescription": "Cameras (`camera` resource type), e.g. `first-person`, `cinematic`. Used with the `cameras` library.",
+      "description": "Cameras (camera resource type), e.g. first-person, cinematic. Used with the cameras library."
+    },
+    "post-effect-slot": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "markdownDescription": "Post-processing effect slots (`post-effect-slot`, called *post-effect* in resources.md). Used with `gfx.posteffects`.",
+      "description": "Post-processing effect slots (post-effect-slot, called post-effect in resources.md). Used with gfx.posteffects."
+    }
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/biomes.schema.json",
+  "title": "VoxelCore generator biomes",
+  "description": "Biome definitions (generators/<name>.files/biomes.toml). The file is a combined object: the same path in other packs is merged into it.",
+  "markdownDescription": "Biome definitions (`generators/<name>.files/biomes.toml`). The file is a combined object: the same path in other packs is merged into it.",
+  "type": "object",
+  "additionalProperties": {
+    "$ref": "#/definitions/biome"
+  },
+  "minProperties": 1,
+  "definitions": {
+    "biome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parameters",
+        "layers",
+        "sea-layers"
+      ],
+      "properties": {
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/parameter"
+          },
+          "markdownDescription": "weights and central values of the parameters for the biome. See the [biome selection](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biome-selection) section. The number of entries must match the number of biome selection parameters.\n\nNeeds at least `biome-parameters` entries (from the generator `.toml`).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "weights and central values of the parameters for the biome. See the biome selection section. The number of entries must match the number of biome selection parameters.\n\nNeeds at least biome-parameters entries (from the generator .toml)."
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/layer"
+          },
+          "markdownDescription": "block layers from top to bottom.\n\n- `height` - layer height in blocks. -1 is used to mark the filler layer, of which there can only be one. Its height is calculated automatically.\n- `block` - full block name\n- `below-sea-level` - whether the layer can be generated below sea level (example: turf). If false, when generated below sea level, the layer will be replaced by the next one.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "block layers from top to bottom.\n\n- height - layer height in blocks. -1 is used to mark the filler layer, of which there can only be one. Its height is calculated automatically.\n- block - full block name\n- below-sea-level - whether the layer can be generated below sea level (example: turf). If false, when generated below sea level, the layer will be replaced by the next one."
+        },
+        "sea-layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/layer"
+          },
+          "markdownDescription": "ocean layers. The position of the top layer coincides with the sea level height.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "ocean layers. The position of the top layer coincides with the sea level height."
+        },
+        "plant-chance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "markdownDescription": "probability of generating a plant on a surface block.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "probability of generating a plant on a surface block.\n\nDefault: 0."
+        },
+        "plants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/plant"
+          },
+          "markdownDescription": "plants randomly placed on the surface.\n\n- `weight` - weight directly affecting the chance of selecting a specific plant.\n- `block` - plant block\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "plants randomly placed on the surface.\n\n- weight - weight directly affecting the chance of selecting a specific plant.\n- block - plant block"
+        },
+        "structure-chance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "markdownDescription": "probability of generating a small structure on a surface block.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "probability of generating a small structure on a surface block.\n\nDefault: 0."
+        },
+        "structures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/structure"
+          },
+          "markdownDescription": "structures randomly placed on the surface.\n\n- `name` - name of the structure declared in `structures.toml`.\n- `weight` - weight directly affecting the chance of choosing a specific structure.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "structures randomly placed on the surface.\n\n- name - name of the structure declared in structures.toml.\n- weight - weight directly affecting the chance of choosing a specific structure."
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "weight"
+      ],
+      "properties": {
+        "value": {
+          "type": "number",
+          "description": "Central value of the parameter for this biome."
+        },
+        "weight": {
+          "type": "number",
+          "description": "Weight of the parameter in biome selection."
+        }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "block",
+        "height"
+      ],
+      "properties": {
+        "block": {
+          "type": "string",
+          "markdownDescription": "full block name\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "full block name"
+        },
+        "height": {
+          "type": "integer",
+          "minimum": -1,
+          "markdownDescription": "layer height in blocks. -1 is used to mark the filler layer, of which there can only be one. Its height is calculated automatically.\n\n`-1` marks the single filler layer.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "layer height in blocks. -1 is used to mark the filler layer, of which there can only be one. Its height is calculated automatically.\n\n-1 marks the single filler layer."
+        },
+        "below-sea-level": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "whether the layer can be generated below sea level (example: turf). If false, when generated below sea level, the layer will be replaced by the next one.\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#biomes)",
+          "description": "whether the layer can be generated below sea level (example: turf). If false, when generated below sea level, the layer will be replaced by the next one.\n\nDefault: true."
+        }
+      }
+    },
+    "plant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "block",
+        "weight"
+      ],
+      "properties": {
+        "block": {
+          "type": "string",
+          "markdownDescription": "Plant block id.",
+          "description": "Plant block id."
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "markdownDescription": "Selection weight (must be positive).",
+          "description": "Selection weight (must be positive)."
+        }
+      }
+    },
+    "structure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "weight"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "markdownDescription": "Structure name declared in `structures.toml`.",
+          "description": "Structure name declared in structures.toml."
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "markdownDescription": "Selection weight (must be positive).",
+          "description": "Selection weight (must be positive)."
+        }
+      }
+    }
+  }
+}

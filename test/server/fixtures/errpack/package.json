@@ -1,0 +1,12 @@
+{
+    "id": "errpack_x",
+    "title": "Err",
+    "version": "1.x",
+    "dependencies": [
+        "!base",
+        "!nosuchpack",
+        "base@>=99.0",
+        "?",
+        "base@=1.0"
+    ]
+}

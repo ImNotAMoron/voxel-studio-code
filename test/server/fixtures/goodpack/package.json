@@ -1,0 +1,11 @@
+{
+    "id": "goodpack",
+    "title": "Good Pack",
+    "version": "1.0.0",
+    "creator": "test",
+    "dependencies": [
+        "!base",
+        "?nonexistent_opt",
+        "~base@>=0.1"
+    ]
+}

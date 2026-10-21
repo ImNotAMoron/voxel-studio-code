@@ -1,0 +1,11 @@
+# statue model
+@box from (0,0,0) to (1,1,1) texture "blocks:crate" shading off {
+    @part tags (top, bottom) region (0, 0, 0.5, 0.5)
+}
+@bone name "arm" move (0.5, 1, 0.5) rotate (0, 45, 0) {
+    @rect from (0,0,0) right (1,0,0) up (0,1,0) cull-face off flip h
+    @tri a (0,0,0) b (1,0,0) c (0,1,0) uv (0,0,1,0,1,1) texture $1
+}
+@bone scale 0.5 {
+    @box from 0 to 1 rotate (0.38, 0, 0, 0.92) delete (top,north)
+}

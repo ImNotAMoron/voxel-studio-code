@@ -1,0 +1,198 @@
+{
+  "VoxelCore block": {
+    "prefix": "vc-block",
+    "description": "Block definition (blocks/<name>.json)",
+    "body": [
+      "{",
+      "\t\"texture\": \"${1:name}\",",
+      "\t\"material\": \"${2|base:stone,base:wood,base:grass,base:sand,base:glass,base:metal|}\",",
+      "\t\"base:durability\": ${3:1.0}$0",
+      "}"
+    ]
+  },
+  "VoxelCore block (6 faces)": {
+    "prefix": "vc-block-faces",
+    "description": "Block with a texture per face",
+    "body": [
+      "{",
+      "\t\"texture-faces\": [",
+      "\t\t\"${1:side}\",",
+      "\t\t\"${2:$1}\",",
+      "\t\t\"${3:bottom}\",",
+      "\t\t\"${4:top}\",",
+      "\t\t\"${5:$1}\",",
+      "\t\t\"${6:$1}\"",
+      "\t],",
+      "\t\"material\": \"${7:base:stone}\"$0",
+      "}"
+    ]
+  },
+  "VoxelCore block (custom model)": {
+    "prefix": "vc-block-model",
+    "description": "Block rendered with a VCM/OBJ model from models/",
+    "body": [
+      "{",
+      "\t\"model\": \"custom\",",
+      "\t\"model-name\": \"${1:model_name}\",",
+      "\t\"hitbox\": [${2:0, 0, 0, 1, 1, 1}],",
+      "\t\"light-passing\": true,",
+      "\t\"material\": \"${3:base:stone}\"$0",
+      "}"
+    ]
+  },
+  "VoxelCore block (rotatable)": {
+    "prefix": "vc-block-rotatable",
+    "description": "Block with a rotation profile",
+    "body": [
+      "{",
+      "\t\"texture\": \"${1:name}\",",
+      "\t\"rotation\": \"${2|pipe,pane,stairs,ladder|}\",",
+      "\t\"material\": \"${3:base:wood}\"$0",
+      "}"
+    ]
+  },
+  "VoxelCore block (light source)": {
+    "prefix": "vc-block-light",
+    "description": "Block that emits light",
+    "body": [
+      "{",
+      "\t\"texture\": \"${1:name}\",",
+      "\t\"emission\": [${2:15}, ${3:15}, ${4:15}],",
+      "\t\"shadeless\": true,",
+      "\t\"material\": \"${5:base:glass}\"$0",
+      "}"
+    ]
+  },
+  "VoxelCore block (inventory)": {
+    "prefix": "vc-block-inventory",
+    "description": "Block with an inventory and UI layout (layouts/<ui-layout>.xml)",
+    "body": [
+      "{",
+      "\t\"texture\": \"${1:name}\",",
+      "\t\"inventory-size\": ${2:20},",
+      "\t\"ui-layout\": \"${3:$TM_FILENAME_BASE}\",",
+      "\t\"material\": \"${4:base:wood}\"$0",
+      "}"
+    ]
+  },
+  "VoxelCore state-based variants": {
+    "prefix": "vc-state-based",
+    "description": "Variant properties stored in block user bits",
+    "body": [
+      "\"state-based\": {",
+      "\t\"offset\": ${1:0},",
+      "\t\"bits\": ${2:4},",
+      "\t\"variants\": [",
+      "\t\t{ \"texture\": \"${3:variant_1}\" }$0",
+      "\t]",
+      "}"
+    ]
+  },
+  "VoxelCore block fields": {
+    "prefix": "vc-fields",
+    "description": "Per-voxel data fields (max 240 bytes total)",
+    "body": [
+      "\"fields\": {",
+      "\t\"${1:name}\": { \"type\": \"${2|int8,int16,int32,int64,float32,float64,char|}\"${3:, \"length\": 1} }$0",
+      "}"
+    ]
+  },
+  "VoxelCore particles": {
+    "prefix": "vc-particles",
+    "description": "Particle emitter settings",
+    "body": [
+      "\"particles\": {",
+      "\t\"lifetime\": ${1:2.0},",
+      "\t\"spawn_interval\": ${2:0.3},",
+      "\t\"velocity\": [${3:0, 0.3, 0}],",
+      "\t\"acceleration\": [${4:0, 0, 0}],",
+      "\t\"size\": [${5:0.2, 0.2, 0.2}],",
+      "\t\"frames\": [\"${6:particles:fire_0}\"]$0",
+      "}"
+    ]
+  },
+  "VoxelCore item": {
+    "prefix": "vc-item",
+    "description": "Item definition (items/<name>.json)",
+    "body": [
+      "{",
+      "\t\"icon-type\": \"sprite\",",
+      "\t\"icon\": \"${1|items:,blocks:|}${2:name}\",",
+      "\t\"stack-size\": ${3:64}$0",
+      "}"
+    ]
+  },
+  "VoxelCore entity": {
+    "prefix": "vc-entity",
+    "description": "Entity definition (entities/<name>.json)",
+    "body": [
+      "{",
+      "\t\"components\": [",
+      "\t\t\"${1:$WORKSPACE_NAME:component}\"",
+      "\t],",
+      "\t\"hitbox\": [${2:0.6, 1.8, 0.6}],",
+      "\t\"body-type\": \"${3|dynamic,kinematic,static|}\"$0",
+      "}"
+    ]
+  },
+  "VoxelCore component with args": {
+    "prefix": "vc-component",
+    "description": "Entity component entry with ARGS",
+    "body": [
+      "{",
+      "\t\"name\": \"${1:pack:component}\",",
+      "\t\"args\": {",
+      "\t\t\"${2:key}\": ${3:\"value\"}",
+      "\t}",
+      "}"
+    ]
+  },
+  "VoxelCore skeleton": {
+    "prefix": "vc-skeleton",
+    "description": "Skeleton (skeletons/<name>.json)",
+    "body": [
+      "{",
+      "\t\"root\": {",
+      "\t\t\"name\": \"${1:root}\",",
+      "\t\t\"model\": \"${2:model_name}\",",
+      "\t\t\"nodes\": [$0]",
+      "\t}",
+      "}"
+    ]
+  },
+  "VoxelCore block material": {
+    "prefix": "vc-material",
+    "description": "Block material (block_materials/<name>.json)",
+    "body": [
+      "{",
+      "\t\"steps-sound\": \"${1:steps/stone}\",",
+      "\t\"place-sound\": \"${2:blocks/stone_place}\",",
+      "\t\"break-sound\": \"${3:blocks/stone_break}\",",
+      "\t\"hit-sound\": \"${4:blocks/stone_hit}\"$0",
+      "}"
+    ]
+  },
+  "VoxelCore loot entry": {
+    "prefix": "vc-loot",
+    "description": "base:loot entry",
+    "body": [
+      "\"base:loot\": [",
+      "\t{ \"item\": \"${1:pack:block.item}\", \"min\": ${2:1}, \"max\": ${3:1}, \"chance\": ${4:1.0} }$0",
+      "]"
+    ]
+  },
+  "VoxelCore package.json": {
+    "prefix": "vc-package",
+    "description": "Content pack package.json",
+    "body": [
+      "{",
+      "\t\"id\": \"${1:$TM_DIRECTORY}\",",
+      "\t\"title\": \"${2:Title}\",",
+      "\t\"version\": \"${3:1.0}\",",
+      "\t\"creator\": \"${4:author}\",",
+      "\t\"description\": \"${5:description}\",",
+      "\t\"dependencies\": [${6:\"base\"}]$0",
+      "}"
+    ]
+  }
+}

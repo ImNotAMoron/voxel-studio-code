@@ -1,0 +1,5 @@
+{
+    "steps-sound": "steps/wood",
+    "place-sound": "crate/open",
+    "break-sound": "blocks/wood_break"
+}

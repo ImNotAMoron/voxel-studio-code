@@ -1,0 +1,11 @@
+{
+    "root": {
+        "model": "statue",
+        "nodes": [
+            {
+                "name": "head",
+                "model": "drop-block"
+            }
+        ]
+    }
+}

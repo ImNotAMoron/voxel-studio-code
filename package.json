@@ -1,0 +1,65 @@
+{
+  "name": "voxelcore-tools",
+  "displayName": "VoxelCore Content-Pack Tools",
+  "description": "Schemas, linting, Lua API, VCM/VCA support, model preview and engine runner for VoxelCore content packs.",
+  "version": "0.1.0",
+  "publisher": "voxelcore",
+  "license": "GPL-3.0",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Snippets",
+    "Visualization"
+  ],
+  "keywords": [
+    "voxelcore",
+    "voxel",
+    "modding",
+    "content pack",
+    "lua"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/package.json",
+    "workspaceContains:**/*.vcm",
+    "workspaceContains:**/*.vca"
+  ],
+  "contributes": {},
+  "scripts": {
+    "gen": "node tools/gen-schemas.mjs && node tools/gen-lua-meta.mjs",
+    "contrib": "node tools/merge-contrib.mjs",
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p . --noEmit && tsc -p webview --noEmit",
+    "test": "node --import tsx --test \"test/**/*.test.ts\"",
+    "package": "npm run build -- --production && vsce package --no-dependencies",
+    "vscode:prepublish": "npm run build -- --production"
+  },
+  "devDependencies": {
+    "@types/luaparse": "^0.2.13",
+    "@types/node": "^22.20.5",
+    "@types/pngjs": "^6.0.5",
+    "@types/three": "^0.186.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.9.1",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1",
+    "luaparse": "^0.3.1",
+    "pngjs": "^7.0.0",
+    "smol-toml": "^1.9.1",
+    "three": "^0.186.1",
+    "vscode-languageclient": "^10.1.2",
+    "vscode-languageserver": "^10.1.2",
+    "vscode-languageserver-textdocument": "^1.0.15"
+  }
+}

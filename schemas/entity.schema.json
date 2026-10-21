@@ -1,0 +1,279 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/entity.schema.json",
+  "title": "VoxelCore entity definition",
+  "description": "Entity definition (<pack>/entities/**/*.json), loaded by EntityLoader.cpp. Entities have no tags, user properties or @append methods.",
+  "markdownDescription": "Entity definition (`<pack>/entities/**/*.json`), loaded by `EntityLoader.cpp`. Entities have no `tags`, user properties or `@append` methods.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "type": "string",
+      "markdownDescription": "Full id of an entity to inherit from (`pack:name`). The parent definition is copied first, then this file's properties are applied on top.",
+      "description": "Full id of an entity to inherit from (pack:name). The parent definition is copied first, then this file's properties are applied on top."
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "description": "Component id (`pack:name`, script in `scripts/components/`)."
+          },
+          {
+            "$ref": "#/definitions/componentObject"
+          }
+        ]
+      },
+      "defaultSnippets": [
+        {
+          "label": "component",
+          "body": [
+            "${1:pack}:${2:component}"
+          ]
+        }
+      ],
+      "markdownDescription": "Defines components and the order in which they are initialized.\n\n```json\n\"components\": [\n    list of components\n]\n```\n\nExample:\n\n```json\n\"components\": [\n    \"base:drop\"\n]\n```\n\nYou can pass values in ARGS from the entity configuration.\nThey will be passed both when creating a new entity and when loading a saved one.\nThe `args` list is used for this:\n\n```json\n\"components\": [\n    {\n        \"name\": \"base:drop\",\n        \"args\": {\n            \"item\": \"base:stone.item\",\n            \"count\": 1\n        }\n    }\n]\n```\n\nThe components code should be in `scripts/components`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#components)",
+      "description": "Defines components and the order in which they are initialized.\n\n\"components\": [\n    list of components\n]\n\nExample:\n\n\"components\": [\n    \"base:drop\"\n]\n\nYou can pass values in ARGS from the entity configuration.\nThey will be passed both when creating a new entity and when loading a saved one.\nThe args list is used for this:\n\n\"components\": [\n    {\n        \"name\": \"base:drop\",\n        \"args\": {\n            \"item\": \"base:stone.item\",\n            \"count\": 1\n        }\n    }\n]\n\nThe components code should be in scripts/components."
+    },
+    "hitbox": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "defaultSnippets": [
+        {
+          "label": "[w, h, d]",
+          "body": [
+            "${1:0.6}",
+            "${2:1.8}",
+            "${3:0.6}"
+          ]
+        }
+      ],
+      "markdownDescription": "An array of three numbers indicating the size of the entity's hitbox.\n\nExample:\n\n```json\n\"hitbox\": [0.6, 1.8, 0.6]\n```\n\nDefault: `[0.25, 0.25, 0.25]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#hitbox)",
+      "description": "An array of three numbers indicating the size of the entity's hitbox.\n\nExample:\n\n\"hitbox\": [0.6, 1.8, 0.6]\n\nDefault: [0.25, 0.25, 0.25]."
+    },
+    "body-type": {
+      "type": "string",
+      "default": "dynamic",
+      "enum": [
+        "static",
+        "kinematic",
+        "dynamic"
+      ],
+      "markdownDescription": "Determines how the physics engine will work with it.\n\n- *static* - static body. No physics calculation, no velocity.\n- *dynamic* - default type. The physics engine calculates movement and collisions.\n- *kinematic* - only movement is calculated, without collisions.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#body-type)",
+      "description": "Determines how the physics engine will work with it.\n\n- static - static body. No physics calculation, no velocity.\n- dynamic - default type. The physics engine calculates movement and collisions.\n- kinematic - only movement is calculated, without collisions.",
+      "markdownEnumDescriptions": [
+        "static body. No physics calculation, no velocity.",
+        "only movement is calculated, without collisions.",
+        "default type. The physics engine calculates movement and collisions."
+      ],
+      "enumDescriptions": [
+        "static body. No physics calculation, no velocity.",
+        "only movement is calculated, without collisions.",
+        "default type. The physics engine calculates movement and collisions."
+      ]
+    },
+    "blocking": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "If true - the entity blocks the placement of a block that intersects with the entity's hitbox.\n\n*In the future will also block other entities movement.*\n\nDefault value: *true*.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#blocking)",
+      "description": "If true - the entity blocks the placement of a block that intersects with the entity's hitbox.\n\nIn the future will also block other entities movement.\n\nDefault value: true."
+    },
+    "selectable": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "If set to `false` the cursor will ignore the entity, passing the ray.\nApplies to all uses of raycast without the include_non_selectable flag.\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#selectable-raycast-opacity)",
+      "description": "If set to false the cursor will ignore the entity, passing the ray.\nApplies to all uses of raycast without the include_non_selectable flag.\n\nDefault: true."
+    },
+    "sensors": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "array",
+            "items": [
+              {
+                "const": "radius"
+              },
+              {
+                "type": "number",
+                "minimum": 0
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "[\"radius\", r]: a sphere around the hitbox center."
+          },
+          {
+            "type": "array",
+            "items": [
+              {
+                "const": "aabb"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "minItems": 7,
+            "maxItems": 7,
+            "description": "[\"aabb\", x1, y1, z1, x2, y2, z2]: an axis-aligned box (does not rotate)."
+          }
+        ]
+      },
+      "defaultSnippets": [
+        {
+          "label": "radius sensor",
+          "body": [
+            [
+              "radius",
+              "${1:1.0}"
+            ]
+          ]
+        },
+        {
+          "label": "aabb sensor",
+          "body": [
+            [
+              "aabb",
+              -0.2,
+              -0.2,
+              -0.2,
+              0.2,
+              0.2,
+              0.2
+            ]
+          ]
+        }
+      ],
+      "markdownDescription": "A sensor is an area attached to a physical body that detects the entry of other bodies into it.\n\n- When a body enters, the *on_sensor_enter* event is triggered.\n- When a body exits, the *on_sensor_exit* event is called.\n\nSensors are indexed in the same order as they are presented in the list, starting from 0.\n\nThe following types (shapes) of sensors exist:\n- *radius* is the simplest sensor. Defines the area around the center of the hitbox. The following values are specified:\n    - radius - number.\n- *aabb* - a rectangular area that changes position depending on the rotation of the entity. **The area itself does not rotate.** The following values are specified:\n    - three numbers x, y, z of the minimal corner of the area.\n    - three numbers x, y, z of the opposite corner of the area.\n\nExample:\n\n```json\n\"sensors\": [\n    [\"aabb\", -0.2, -0.2, -0.2, 0.2, 0.2, 0.2],\n    [\"radius\", 1.6]\n]\n```\n\n0. A rectangular area with a width, height and length of 0.4 m, centered at 0.0.\n1. Radial area with a radius of 1.6 m.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#sensors)",
+      "description": "A sensor is an area attached to a physical body that detects the entry of other bodies into it.\n\n- When a body enters, the on_sensor_enter event is triggered.\n- When a body exits, the on_sensor_exit event is called.\n\nSensors are indexed in the same order as they are presented in the list, starting from 0.\n\nThe following types (shapes) of sensors exist:\n- radius is the simplest sensor. Defines the area around the center of the hitbox. The following values are specified:\n    - radius - number.\n- aabb - a rectangular area that changes position depending on the rotation of the entity. The area itself does not rotate. The following values are specified:\n    - three numbers x, y, z of the minimal corner of the area.\n    - three numbers x, y, z of the opposite corner of the area.\n\nExample:\n\n\"sensors\": [\n    [\"aabb\", -0.2, -0.2, -0.2, 0.2, 0.2, 0.2],\n    [\"radius\", 1.6]\n]\n\n0. A rectangular area with a width, height and length of 0.4 m, centered at 0.0.\n1. Radial area with a radius of 1.6 m."
+    },
+    "solid": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "Makes the entity's hitbox an obstacle. When enabling this property for `dynamic` body, a mass must be specified.\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#solid)",
+      "description": "Makes the entity's hitbox an obstacle. When enabling this property for dynamic body, a mass must be specified.\n\nDefault: false."
+    },
+    "mass": {
+      "type": "number",
+      "minimum": 0,
+      "default": 1,
+      "markdownDescription": "Defines the entity's mass. Kilograms are used as the default.\nFor `kinematic` bodies, an infinite mass is used instead.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#mass)",
+      "description": "Defines the entity's mass. Kilograms are used as the default.\nFor kinematic bodies, an infinite mass is used instead."
+    },
+    "elasticity": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0,
+      "markdownDescription": "Defines the entity's elasticity (affects the bounce on collision).\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#elasticity)",
+      "description": "Defines the entity's elasticity (affects the bounce on collision).\n\nDefault: 0."
+    },
+    "step-height": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0.5,
+      "markdownDescription": "Defines the maximum height of an obstacle an entity can step onto without jumping.\n\nDefault: `0.5`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#step-height)",
+      "description": "Defines the maximum height of an obstacle an entity can step onto without jumping.\n\nDefault: 0.5."
+    },
+    "material": {
+      "type": "string",
+      "markdownDescription": "Defines the entity's material (same as for blocks).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#material)",
+      "description": "Defines the entity's material (same as for blocks)."
+    },
+    "skeleton-name": {
+      "type": "string",
+      "markdownDescription": "The default value is the same as the entity name. Determines which skeleton will be used by the entity. See [rigging](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/rigging.md).\n\nDefault: the entity id.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#skeleton-name)",
+      "description": "The default value is the same as the entity name. Determines which skeleton will be used by the entity. See rigging.\n\nDefault: the entity id."
+    },
+    "lighting-mode": {
+      "type": "string",
+      "default": "solid",
+      "enum": [
+        "bone-based",
+        "solid"
+      ],
+      "markdownDescription": "- *bone-based* - lighting is calculated for each skeletal bone separately.\n- *solid* - lighting is calculated for the entire entity.\n\nDefault: `\"solid\"`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#lighting-mode)",
+      "description": "- bone-based - lighting is calculated for each skeletal bone separately.\n- solid - lighting is calculated for the entire entity.\n\nDefault: \"solid\".",
+      "markdownEnumDescriptions": [
+        "lighting is calculated for each skeletal bone separately.",
+        "lighting is calculated for the entire entity."
+      ],
+      "enumDescriptions": [
+        "lighting is calculated for each skeletal bone separately.",
+        "lighting is calculated for the entire entity."
+      ]
+    },
+    "save": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "the entity itself\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#savingloading)",
+      "description": "the entity itself\n\nDefault: true."
+    },
+    "save-skeleton-pose": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "skeleton pose\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#savingloading)",
+      "description": "skeleton pose\n\nDefault: false."
+    },
+    "save-skeleton-textures": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "dynamically assigned textures\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#savingloading)",
+      "description": "dynamically assigned textures\n\nDefault: false."
+    },
+    "save-body-velocity": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "body velocity\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#savingloading)",
+      "description": "body velocity\n\nDefault: true."
+    },
+    "save-body-settings": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "changed body settings <br>(type, damping, crouching)\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/entity-properties.md#savingloading)",
+      "description": "changed body settings <br>(type, damping, crouching)\n\nDefault: true."
+    }
+  },
+  "definitions": {
+    "componentObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Component id (`pack:name`)."
+        },
+        "args": {
+          "description": "Value passed to the component as `ARGS` (on creation and on load)."
+        }
+      }
+    }
+  }
+}

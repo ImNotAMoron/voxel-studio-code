@@ -1,0 +1,12 @@
+[desert]
+parameters = [
+    {weight=1, value=0}
+]
+layers = [
+    {height=-1, block="base:sand"},
+    {height=-1, block="base:nope"}
+]
+sea-layers = []
+structures = [
+    {name="ghost", weight=1}
+]

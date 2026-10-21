@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/block-material.schema.json",
+  "title": "VoxelCore block material",
+  "description": "Block material (<pack>/block_materials/<name>.json, id pack:name), read by BlockMaterial::deserialize (src/voxels/Block.cpp). Referenced from a block's material.",
+  "markdownDescription": "Block material (`<pack>/block_materials/<name>.json`, id `pack:name`), read by `BlockMaterial::deserialize` (`src/voxels/Block.cpp`). Referenced from a block's `material`.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "markdownDescription": "Overrides the material name. Normally omitted: the id is `pack:<file name>`.",
+      "description": "Overrides the material name. Normally omitted: the id is pack:<file name>."
+    },
+    "steps-sound": {
+      "type": "string",
+      "markdownDescription": "Footsteps sound name (e.g. `steps/stone`), loaded with all its variants.",
+      "description": "Footsteps sound name (e.g. steps/stone), loaded with all its variants."
+    },
+    "place-sound": {
+      "type": "string",
+      "markdownDescription": "Sound played when a block of this material is placed.",
+      "description": "Sound played when a block of this material is placed."
+    },
+    "break-sound": {
+      "type": "string",
+      "markdownDescription": "Sound played when a block of this material is broken.",
+      "description": "Sound played when a block of this material is broken."
+    },
+    "hit-sound": {
+      "type": "string",
+      "markdownDescription": "Sound played while hitting the block. Default: `steps-sound`.",
+      "description": "Sound played while hitting the block. Default: steps-sound."
+    },
+    "sound-absorption": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.5,
+      "markdownDescription": "How much the material absorbs sound (used by audio occlusion), 0.0 to 1.0.\n\nDefault: `0.5`.",
+      "description": "How much the material absorbs sound (used by audio occlusion), 0.0 to 1.0.\n\nDefault: 0.5."
+    }
+  }
+}

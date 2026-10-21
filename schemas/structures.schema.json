@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/structures.schema.json",
+  "title": "VoxelCore generator structures",
+  "description": "Structure definitions (generators/<name>.files/structures.toml): each key is a structure name that must match a fragment fragments/<name>.vox. Combined object (merged across packs).",
+  "markdownDescription": "Structure definitions (`generators/<name>.files/structures.toml`): each key is a structure name that must match a fragment `fragments/<name>.vox`. Combined object (merged across packs).",
+  "type": "object",
+  "additionalProperties": {
+    "$ref": "#/definitions/structure"
+  },
+  "definitions": {
+    "structure": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lowering": {
+          "type": "integer",
+          "default": 0,
+          "markdownDescription": "depth of structure lowering.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#structures)",
+          "description": "depth of structure lowering.\n\nDefault: 0."
+        }
+      }
+    }
+  }
+}

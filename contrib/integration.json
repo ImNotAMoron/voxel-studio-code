@@ -1,0 +1,118 @@
+{
+  "contributes": {
+    "languages": [
+      {
+        "id": "vcm",
+        "aliases": ["VoxelCore Model", "VCM"],
+        "extensions": [".vcm"],
+        "configuration": "./languages/vcm.language-configuration.json"
+      },
+      {
+        "id": "vca",
+        "aliases": ["VoxelCore Animation", "VCA"],
+        "extensions": [".vca"],
+        "configuration": "./languages/vcm.language-configuration.json"
+      }
+    ],
+    "grammars": [
+      { "language": "vcm", "scopeName": "source.vcm", "path": "./syntaxes/vcm.tmLanguage.json" },
+      { "language": "vca", "scopeName": "source.vca", "path": "./syntaxes/vca.tmLanguage.json" }
+    ],
+    "snippets": [
+      { "language": "json", "path": "./snippets/json.json" },
+      { "language": "jsonc", "path": "./snippets/json.json" },
+      { "language": "lua", "path": "./snippets/lua.json" },
+      { "language": "vcm", "path": "./snippets/vcm.json" },
+      { "language": "vca", "path": "./snippets/vca.json" }
+    ],
+    "commands": [
+      { "command": "voxelcore.newPack", "title": "New Content Pack…", "category": "VoxelCore" },
+      { "command": "voxelcore.newBlock", "title": "New Block…", "category": "VoxelCore" },
+      { "command": "voxelcore.newItem", "title": "New Item…", "category": "VoxelCore" },
+      { "command": "voxelcore.newEntity", "title": "New Entity…", "category": "VoxelCore" },
+      { "command": "voxelcore.newComponent", "title": "New Entity Component…", "category": "VoxelCore" },
+      { "command": "voxelcore.run", "title": "Run Engine", "category": "VoxelCore", "icon": "$(play)" },
+      { "command": "voxelcore.runQuickWorld", "title": "Run Quick World", "category": "VoxelCore", "icon": "$(play-circle)" },
+      { "command": "voxelcore.runHeadlessScript", "title": "Run Lua Script Headless", "category": "VoxelCore" },
+      { "command": "voxelcore.prepareUserDir", "title": "Link Workspace Packs into Dev User Dir", "category": "VoxelCore" },
+      { "command": "voxelcore.openLog", "title": "Open Engine Log (latest.log)", "category": "VoxelCore" },
+      { "command": "voxelcore.restartServer", "title": "Restart Language Server", "category": "VoxelCore" }
+    ],
+    "submenus": [
+      { "id": "voxelcore.new", "label": "New VoxelCore" }
+    ],
+    "menus": {
+      "explorer/context": [
+        { "submenu": "voxelcore.new", "group": "navigation@9", "when": "explorerResourceIsFolder" }
+      ],
+      "voxelcore.new": [
+        { "command": "voxelcore.newPack", "group": "1_pack" },
+        { "command": "voxelcore.newBlock", "group": "2_unit@1", "when": "voxelcore.hasPacks" },
+        { "command": "voxelcore.newItem", "group": "2_unit@2", "when": "voxelcore.hasPacks" },
+        { "command": "voxelcore.newEntity", "group": "2_unit@3", "when": "voxelcore.hasPacks" },
+        { "command": "voxelcore.newComponent", "group": "2_unit@4", "when": "voxelcore.hasPacks" }
+      ],
+      "commandPalette": [
+        { "command": "voxelcore.newBlock", "when": "voxelcore.hasPacks" },
+        { "command": "voxelcore.newItem", "when": "voxelcore.hasPacks" },
+        { "command": "voxelcore.newEntity", "when": "voxelcore.hasPacks" },
+        { "command": "voxelcore.newComponent", "when": "voxelcore.hasPacks" },
+        { "command": "voxelcore.runHeadlessScript", "when": "editorLangId == lua" }
+      ],
+      "editor/context": [
+        { "command": "voxelcore.runHeadlessScript", "group": "voxelcore", "when": "editorLangId == lua && voxelcore.hasPacks" }
+      ]
+    },
+    "taskDefinitions": [
+      {
+        "type": "voxelcore",
+        "required": ["action"],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["run", "quickWorld", "headless"],
+            "enumDescriptions": [
+              "Start the engine with the workspace packs linked into the dev user dir",
+              "Start the engine and open (or create) a dev world with the workspace packs enabled",
+              "Run a Lua app script headless (--headless --script)"
+            ]
+          },
+          "world": { "type": "string", "description": "quickWorld: world name", "default": "vscode-dev" },
+          "generator": { "type": "string", "description": "quickWorld: generator id, e.g. base:demo" },
+          "seed": { "type": "string", "description": "quickWorld: seed", "default": "2025" },
+          "recreate": { "type": "boolean", "description": "quickWorld: delete and recreate the world", "default": false },
+          "script": { "type": "string", "description": "headless: Lua app script path" },
+          "args": { "type": "array", "items": { "type": "string" }, "description": "Extra engine arguments" }
+        }
+      }
+    ],
+    "configuration": {
+      "title": "VoxelCore",
+      "properties": {
+        "voxelcore.executable": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to the VoxelCore executable. Empty: auto-detect `build/*/VoxelCore(.exe)` in the workspace or its ancestors. Supports `${workspaceFolder}`.",
+          "scope": "machine-overridable"
+        },
+        "voxelcore.resPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Engine `res/` folder (the `core` pack and built-in packs such as `base`). Empty: auto-detect.",
+          "scope": "machine-overridable"
+        },
+        "voxelcore.userDir": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "User dir (`--dir`) for runs started from VS Code. Workspace packs are linked into `<userDir>/content`. Empty: the extension's workspace storage.",
+          "scope": "machine-overridable"
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "onLanguage:vcm",
+    "onLanguage:vca",
+    "onCommand:voxelcore.newPack"
+  ]
+}

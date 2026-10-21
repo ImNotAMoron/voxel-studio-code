@@ -1,0 +1,11 @@
+{
+    "sounds": [
+        "crate/open"
+    ],
+    "textures": [
+        "gui/goodpack_logo"
+    ],
+    "models": [
+        "drop-item"
+    ]
+}

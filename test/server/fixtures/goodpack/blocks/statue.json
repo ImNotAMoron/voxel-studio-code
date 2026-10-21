@@ -1,0 +1,12 @@
+{
+    "model": "custom",
+    "model-name": "statue",
+    "solid": true,
+    "texture": "crate",
+    "overlay-texture": "blocks:crate",
+    "particles": {
+        "frames": [
+            "particles:fire_0"
+        ]
+    }
+}

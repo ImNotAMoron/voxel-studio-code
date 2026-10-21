@@ -1,0 +1,36 @@
+{
+  "contributes": {
+    "commands": [
+      {
+        "command": "voxelcore.configureLua",
+        "title": "Configure Lua for content packs",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.writeLuarc",
+        "title": "Write .luarc.json",
+        "category": "VoxelCore"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "voxelcore.configureLua": {
+          "type": "string",
+          "enum": ["ask", "always", "never"],
+          "enumDescriptions": [
+            "Ask once per workspace before writing Lua.* settings for the Lua language server (sumneko.lua).",
+            "Always configure the Lua language server in workspaces with content packs, without asking.",
+            "Never change Lua.* settings automatically (the commands still work)."
+          ],
+          "default": "ask",
+          "scope": "window",
+          "markdownDescription": "Whether VoxelCore Tools configures the [Lua language server](https://marketplace.visualstudio.com/items?itemName=sumneko.lua) for content-pack workspaces: adds the engine API definitions to `Lua.workspace.library`, sets `Lua.runtime.version` to `LuaJIT`, and registers engine globals in `Lua.diagnostics.globals`."
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "onCommand:voxelcore.configureLua",
+    "onCommand:voxelcore.writeLuarc"
+  ]
+}

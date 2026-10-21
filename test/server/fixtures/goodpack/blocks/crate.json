@@ -1,0 +1,38 @@
+{
+    "texture": "crate",
+    "material": "goodpack:wood",
+    "inventory-size": 9,
+    "goodpack:weight": 1,
+    "base:durability": 2,
+    "hitbox": [
+        0,
+        0,
+        0,
+        1,
+        0.5,
+        1
+    ],
+    "emission": [
+        1,
+        2,
+        3
+    ],
+    "fields": {
+        "a": {
+            "type": "int32",
+            "length": 10
+        }
+    },
+    "state-based": {
+        "bits": 2,
+        "variants": [
+            {
+                "texture": "crate_open"
+            }
+        ]
+    },
+    "tick-interval": 5,
+    "tags": [
+        "goodpack:box"
+    ]
+}

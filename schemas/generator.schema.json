@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/generator.schema.json",
+  "title": "VoxelCore world generator",
+  "description": "World generator config (<pack>/generators/<name>.toml, id pack:name), read by ContentLoader::loadGenerator. Biomes, structures, fragments and script.lua live in generators/<name>.files/.",
+  "markdownDescription": "World generator config (`<pack>/generators/<name>.toml`, id `pack:name`), read by `ContentLoader::loadGenerator`. Biomes, structures, fragments and `script.lua` live in `generators/<name>.files/`.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "caption": {
+      "type": "string",
+      "markdownDescription": "the generator display name. By default, it is generated from the id.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "the generator display name. By default, it is generated from the id."
+    },
+    "biome-parameters": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4,
+      "default": 0,
+      "markdownDescription": "the number of biome selection parameters (from 0 to 4). Default: 0.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "the number of biome selection parameters (from 0 to 4). Default: 0."
+    },
+    "sea-level": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "markdownDescription": "sea level (below this level, sea-layers will be generated instead of air). Default: 0.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "sea level (below this level, sea-layers will be generated instead of air). Default: 0."
+    },
+    "biome-bpd": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 4,
+      "markdownDescription": "Number of blocks per point of the biome selection parameter map.\n\nSpelled `biome-bpd` by the engine (the docs say `biomes-bpd`, which is ignored).\n\nDefault: `4`.",
+      "description": "Number of blocks per point of the biome selection parameter map.\n\nSpelled biome-bpd by the engine (the docs say biomes-bpd, which is ignored).\n\nDefault: 4."
+    },
+    "heights-bpd": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 4,
+      "markdownDescription": "number of blocks per point of the height map. Default: 4.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "number of blocks per point of the height map. Default: 4."
+    },
+    "heights-interpolation": {
+      "type": "string",
+      "default": "linear",
+      "enum": [
+        "nearest",
+        "linear",
+        "cubic"
+      ],
+      "markdownDescription": "Interpolation used to upscale the height map (`heights-bpd` > 1).\n\nDefault: `\"linear\"`.",
+      "description": "Interpolation used to upscale the height map (heights-bpd > 1).\n\nDefault: \"linear\".",
+      "markdownEnumDescriptions": [
+        "no interpolation",
+        "bilinear interpolation",
+        "bicubic interpolation"
+      ],
+      "enumDescriptions": [
+        "no interpolation",
+        "bilinear interpolation",
+        "bicubic interpolation"
+      ]
+    },
+    "biomes-interpolation": {
+      "type": "string",
+      "default": "linear",
+      "enum": [
+        "nearest",
+        "linear",
+        "cubic"
+      ],
+      "markdownDescription": "Interpolation used to upscale the biome parameter maps (`biome-bpd` > 1).\n\nDefault: `\"linear\"`.",
+      "description": "Interpolation used to upscale the biome parameter maps (biome-bpd > 1).\n\nDefault: \"linear\".",
+      "markdownEnumDescriptions": [
+        "no interpolation",
+        "bilinear interpolation",
+        "bicubic interpolation"
+      ],
+      "enumDescriptions": [
+        "no interpolation",
+        "bilinear interpolation",
+        "bicubic interpolation"
+      ]
+    },
+    "wide-structs-chunks-radius": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 3,
+      "markdownDescription": "maximum radius for placing 'wide' structures, measured in chunks.\n\nDefault: `3`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "maximum radius for placing 'wide' structures, measured in chunks.\n\nDefault: 3."
+    },
+    "heightmap-inputs": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 4
+      },
+      "uniqueItems": true,
+      "markdownDescription": "an array of parameter map numbers that will be passed by the inputs table to the height map generation function.\n\n1-based indices; each must be `<= biome-parameters`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "an array of parameter map numbers that will be passed by the inputs table to the height map generation function.\n\n1-based indices; each must be <= biome-parameters."
+    },
+    "player-spawn-radius": {
+      "type": "number",
+      "minimum": 0,
+      "default": 100,
+      "markdownDescription": "radius of the player spawn zone.\n\nDefault: `100`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "radius of the player spawn zone.\n\nDefault: 100."
+    },
+    "player-min-spawn-height": {
+      "type": "integer",
+      "default": 64,
+      "markdownDescription": "specifying the **preferred** vertical spawn zone.\nSpecifying a minimum height allows you to minimize the chance of spawning in underground voids, just as specifying a maximum allows you to minimize the chance of spawning on suspiciously dense cloud.\n\nDefault: `64`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "specifying the preferred vertical spawn zone.\nSpecifying a minimum height allows you to minimize the chance of spawning in underground voids, just as specifying a maximum allows you to minimize the chance of spawning on suspiciously dense cloud.\n\nDefault: 64."
+    },
+    "player-max-spawn-height": {
+      "type": "integer",
+      "default": 256,
+      "markdownDescription": "specifying the **preferred** vertical spawn zone.\nSpecifying a minimum height allows you to minimize the chance of spawning in underground voids, just as specifying a maximum allows you to minimize the chance of spawning on suspiciously dense cloud.\n\nDefault: `256`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/world-generator.md#configuration-file)",
+      "description": "specifying the preferred vertical spawn zone.\nSpecifying a minimum height allows you to minimize the chance of spawning in underground voids, just as specifying a maximum allows you to minimize the chance of spawning on suspiciously dense cloud.\n\nDefault: 256."
+    }
+  }
+}

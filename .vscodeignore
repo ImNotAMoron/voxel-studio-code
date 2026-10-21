@@ -1,0 +1,14 @@
+**
+!dist/**
+!schemas/**
+!meta/**
+!syntaxes/**
+!languages/**
+!snippets/**
+!media/**
+!templates/**
+!package.json
+!README.md
+!CHANGELOG.md
+!LICENSE
+dist/**/*.map

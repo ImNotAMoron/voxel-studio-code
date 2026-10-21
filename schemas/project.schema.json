@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/project.schema.json",
+  "title": "VoxelCore project.toml",
+  "description": "Project definition (<project>/project.toml, see res/project/), read by Project::deserialize (src/devtools/Project.cpp).",
+  "markdownDescription": "Project definition (`<project>/project.toml`, see `res/project/`), read by `Project::deserialize` (`src/devtools/Project.cpp`).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "markdownDescription": "Project name (id).",
+      "description": "Project name (id)."
+    },
+    "title": {
+      "type": "string",
+      "markdownDescription": "Project title shown to the user.",
+      "description": "Project title shown to the user."
+    },
+    "base_packs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "markdownDescription": "Content packs always enabled for the project.",
+      "description": "Content packs always enabled for the project."
+    },
+    "permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "debugging",
+          "network",
+          "record-audio",
+          "write-to-user",
+          "sub-instances"
+        ]
+      },
+      "markdownDescription": "Permissions granted to the project scripts: `debugging` (debug server / sub-instance debugging), `network`, `record-audio`, `write-to-user`, `sub-instances`.",
+      "description": "Permissions granted to the project scripts: debugging (debug server / sub-instance debugging), network, record-audio, write-to-user, sub-instances."
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/defaults.schema.json",
+  "title": "VoxelCore config/defaults.toml",
+  "description": "Overrides of default content bindings (<pack>/config/defaults.toml). It is a combined object: values from later-loaded packs win.",
+  "markdownDescription": "Overrides of default content bindings (`<pack>/config/defaults.toml`). It is a combined object: values from later-loaded packs win.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "generator": {
+      "type": "string",
+      "markdownDescription": "Default world generator id (`core:default`, base: `base:demo`).",
+      "description": "Default world generator id (core:default, base: base:demo)."
+    },
+    "player-entity": {
+      "type": "string",
+      "markdownDescription": "Entity id used for players (base: `base:player`). Empty: no entity.",
+      "description": "Entity id used for players (base: base:player). Empty: no entity."
+    },
+    "hand-skeleton": {
+      "type": "string",
+      "markdownDescription": "Skeleton id used to render the first-person hand (base: `base:hand`).",
+      "description": "Skeleton id used to render the first-person hand (base: base:hand)."
+    },
+    "block-material": {
+      "type": "string",
+      "markdownDescription": "Material used by blocks without `material` (base: `base:stone`).",
+      "description": "Material used by blocks without material (base: base:stone)."
+    }
+  }
+}

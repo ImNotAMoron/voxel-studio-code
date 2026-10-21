@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/skeleton.schema.json",
+  "title": "VoxelCore skeleton",
+  "description": "Entity skeleton (<pack>/skeletons/<name>.json, id pack:name), parsed by SkeletonConfig::parse (src/animation/rigging.cpp).",
+  "markdownDescription": "Entity skeleton (`<pack>/skeletons/<name>.json`, id `pack:name`), parsed by `SkeletonConfig::parse` (`src/animation/rigging.cpp`).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "root"
+  ],
+  "properties": {
+    "root": {
+      "$ref": "#/definitions/node",
+      "markdownDescription": "root element\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/rigging.md#skeletons)",
+      "description": "root element"
+    }
+  },
+  "definitions": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "markdownDescription": "name of the element to get the index (optional field)\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/rigging.md#skeletons)",
+          "description": "name of the element to get the index (optional field)"
+        },
+        "model": {
+          "type": "string",
+          "markdownDescription": "name of the model to display the element (optional field)\n\nModel name (`models/` folder of a pack; vcm, obj or vec3).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/rigging.md#skeletons)",
+          "description": "name of the model to display the element (optional field)\n\nModel name (models/ folder of a pack; vcm, obj or vec3)."
+        },
+        "offset": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "element offset relative to the parent (optional field)\n\nDefault: `[0, 0, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/rigging.md#skeletons)",
+          "description": "element offset relative to the parent (optional field)\n\nDefault: [0, 0, 0]."
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/node"
+          },
+          "markdownDescription": "list of elements - sub-elements, which are affected by the matrix of this element (optional field)\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/rigging.md#skeletons)",
+          "description": "list of elements - sub-elements, which are affected by the matrix of this element (optional field)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/text3d-preset.schema.json",
+  "title": "VoxelCore 3D text preset",
+  "description": "3D text display settings (<pack>/presets/text3d/<name>.toml, e.g. res/presets/text3d/player_name.toml), read by NotePreset::deserialize; the same table is used by gfx.text3d.show.",
+  "markdownDescription": "3D text display settings (`<pack>/presets/text3d/<name>.toml`, e.g. `res/presets/text3d/player_name.toml`), read by `NotePreset::deserialize`; the same table is used by `gfx.text3d.show`.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "display": {
+      "type": "string",
+      "default": "static_billboard",
+      "enum": [
+        "static_billboard",
+        "y_free_billboard",
+        "xy_free_billboard",
+        "projected"
+      ],
+      "markdownDescription": "Display format\n\nDefault: `\"static_billboard\"`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/3d-text.md#3d-text)",
+      "description": "Display format\n\nDefault: \"static_billboard\".",
+      "markdownEnumDescriptions": [
+        "Simple 3D text in the world with manual size and rotation control",
+        "Freely rotating text on the Y axis facing the camera",
+        "Freely rotating text facing the camera",
+        "Projected text (displayed in screen coordinates)"
+      ],
+      "enumDescriptions": [
+        "Simple 3D text in the world with manual size and rotation control",
+        "Freely rotating text on the Y axis facing the camera",
+        "Freely rotating text facing the camera",
+        "Projected text (displayed in screen coordinates)"
+      ]
+    },
+    "color": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      },
+      "minItems": 4,
+      "maxItems": 4,
+      "default": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "markdownDescription": "Text color\n\nDefault: `[1, 1, 1, 1]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/3d-text.md#3d-text)",
+      "description": "Text color\n\nDefault: [1, 1, 1, 1]."
+    },
+    "scale": {
+      "type": "number",
+      "default": 1,
+      "markdownDescription": "Text scale\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/3d-text.md#3d-text)",
+      "description": "Text scale\n\nDefault: 1."
+    },
+    "render_distance": {
+      "type": "number",
+      "default": 32,
+      "minimum": 0,
+      "markdownDescription": "Text rendering distance\n\nDefault: `32`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/3d-text.md#3d-text)",
+      "description": "Text rendering distance\n\nDefault: 32."
+    },
+    "xray_opacity": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 1,
+      "markdownDescription": "Visibility through obstacles\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/3d-text.md#3d-text)",
+      "description": "Visibility through obstacles\n\nDefault: 0."
+    },
+    "perspective": {
+      "type": "number",
+      "default": 1,
+      "minimum": 0,
+      "maximum": 1,
+      "markdownDescription": "Perspective coefficient\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/3d-text.md#3d-text)",
+      "description": "Perspective coefficient\n\nDefault: 1."
+    },
+    "font": {
+      "type": "string",
+      "default": "",
+      "markdownDescription": "Font. If absent, the default one is used\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/3d-text.md#3d-text)",
+      "description": "Font. If absent, the default one is used"
+    }
+  }
+}

@@ -1,0 +1,196 @@
+[
+  {
+    "schema": "biomes.schema.json",
+    "title": "VoxelCore generator biomes",
+    "format": "toml",
+    "fileMatch": [
+      "**/generators/*.files/biomes.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?generators/[^/]*\\.files/biomes\\.toml$"
+    ]
+  },
+  {
+    "schema": "block-material.schema.json",
+    "title": "VoxelCore block material",
+    "format": "json",
+    "fileMatch": [
+      "**/block_materials/*.json"
+    ]
+  },
+  {
+    "schema": "block.schema.json",
+    "title": "VoxelCore block definition",
+    "format": "json",
+    "fileMatch": [
+      "**/blocks/**/*.json"
+    ]
+  },
+  {
+    "schema": "defaults.schema.json",
+    "title": "VoxelCore config/defaults.toml",
+    "format": "toml",
+    "fileMatch": [
+      "**/config/defaults.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?config/defaults\\.toml$"
+    ]
+  },
+  {
+    "schema": "user-props.schema.json",
+    "title": "VoxelCore config/user-props.toml",
+    "format": "toml",
+    "fileMatch": [
+      "**/config/user-props.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?config/user-props\\.toml$"
+    ]
+  },
+  {
+    "schema": "tags.schema.json",
+    "title": "VoxelCore tags.toml",
+    "format": "toml",
+    "fileMatch": [
+      "**/tags.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?tags\\.toml$"
+    ]
+  },
+  {
+    "schema": "bindings.schema.json",
+    "title": "VoxelCore config/bindings.toml",
+    "format": "toml",
+    "fileMatch": [
+      "**/config/bindings.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?config/bindings\\.toml$"
+    ]
+  },
+  {
+    "schema": "project.schema.json",
+    "title": "VoxelCore project.toml",
+    "format": "toml",
+    "fileMatch": [
+      "**/project.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?project\\.toml$"
+    ]
+  },
+  {
+    "schema": "content.schema.json",
+    "title": "VoxelCore content.json (auto-generated)",
+    "format": "json",
+    "fileMatch": [
+      "**/content/*/content.json"
+    ]
+  },
+  {
+    "schema": "entity.schema.json",
+    "title": "VoxelCore entity definition",
+    "format": "json",
+    "fileMatch": [
+      "**/entities/**/*.json"
+    ]
+  },
+  {
+    "schema": "generator.schema.json",
+    "title": "VoxelCore world generator",
+    "format": "toml",
+    "fileMatch": [
+      "**/generators/*.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?generators/[^/]*\\.toml$"
+    ]
+  },
+  {
+    "schema": "item.schema.json",
+    "title": "VoxelCore item definition",
+    "format": "json",
+    "fileMatch": [
+      "**/items/**/*.json"
+    ]
+  },
+  {
+    "schema": "package.schema.json",
+    "title": "VoxelCore content pack (package.json)",
+    "format": "json",
+    "fileMatch": [
+      "**/content/*/package.json"
+    ]
+  },
+  {
+    "schema": "particles.schema.json",
+    "title": "VoxelCore particles preset",
+    "format": "json",
+    "fileMatch": [],
+    "refOnly": true
+  },
+  {
+    "schema": "preload.schema.json",
+    "title": "VoxelCore preload.json",
+    "format": "json",
+    "fileMatch": [
+      "**/preload.json"
+    ]
+  },
+  {
+    "schema": "resource-aliases.schema.json",
+    "title": "VoxelCore resource-aliases.json",
+    "format": "json",
+    "fileMatch": [
+      "**/resource-aliases.json"
+    ]
+  },
+  {
+    "schema": "resources.schema.json",
+    "title": "VoxelCore resources.json",
+    "format": "json",
+    "fileMatch": [
+      "**/resources.json"
+    ]
+  },
+  {
+    "schema": "skeleton.schema.json",
+    "title": "VoxelCore skeleton",
+    "format": "json",
+    "fileMatch": [
+      "**/skeletons/*.json"
+    ]
+  },
+  {
+    "schema": "structures.schema.json",
+    "title": "VoxelCore generator structures",
+    "format": "toml",
+    "fileMatch": [
+      "**/generators/*.files/structures.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?generators/[^/]*\\.files/structures\\.toml$"
+    ]
+  },
+  {
+    "schema": "text3d-preset.schema.json",
+    "title": "VoxelCore 3D text preset",
+    "format": "toml",
+    "fileMatch": [
+      "**/presets/text3d/*.toml"
+    ],
+    "regexMatch": [
+      "^(?:.*/)?presets/text3d/[^/]*\\.toml$"
+    ]
+  },
+  {
+    "schema": "weather-preset.schema.json",
+    "title": "VoxelCore weather preset",
+    "format": "json",
+    "fileMatch": [
+      "**/presets/weather/*.json"
+    ]
+  }
+]

@@ -1,0 +1,19 @@
+[meadow]
+parameters = [
+    {weight=1, value=0}
+]
+layers = [
+    {height=-1, block="base:stone"},
+    {height=1, block="goodpack:crate"}
+]
+sea-layers = [
+    {height=-1, block="base:water"}
+]
+plant-chance = 0.2
+plants = [
+    {weight=1, block="base:grass"}
+]
+structure-chance = 0.01
+structures = [
+    {name="hut", weight=1}
+]

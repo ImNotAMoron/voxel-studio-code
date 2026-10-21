@@ -1,0 +1,1158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/block.schema.json",
+  "title": "VoxelCore block definition",
+  "description": "Block definition (<pack>/blocks/**/*.json), loaded by BlockLoader.cpp. Unknown keys are silently dropped by the engine, so they are reported here.",
+  "markdownDescription": "Block definition (`<pack>/blocks/**/*.json`), loaded by `BlockLoader.cpp`. Unknown keys are silently dropped by the engine, so they are reported here.",
+  "type": "object",
+  "allOf": [
+    {
+      "not": {
+        "required": [
+          "texture",
+          "texture-faces"
+        ]
+      },
+      "errorMessage": "texture and texture-faces are mutually exclusive: when both are present the engine silently uses texture."
+    },
+    {
+      "not": {
+        "required": [
+          "hitbox",
+          "hitboxes"
+        ]
+      },
+      "errorMessage": "hitbox and hitboxes are mutually exclusive: when both are present the engine uses hitboxes."
+    },
+    {
+      "if": {
+        "properties": {
+          "model": {
+            "const": "custom"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "not": {
+          "required": [
+            "parent"
+          ]
+        }
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "model-name"
+            ]
+          },
+          {
+            "required": [
+              "model-primitives"
+            ]
+          }
+        ],
+        "errorMessage": "\"model\": \"custom\" requires model-name (or the deprecated model-primitives)."
+      }
+    }
+  ],
+  "properties": {
+    "parent": {
+      "type": "string",
+      "markdownDescription": "Full id of a block to inherit from (`pack:name`). The parent definition is copied first, then this file's properties are applied on top. The parent is loaded first even if it is defined later in the pack.",
+      "description": "Full id of a block to inherit from (pack:name). The parent definition is copied first, then this file's properties are applied on top. The parent is loaded first even if it is defined later in the pack."
+    },
+    "caption": {
+      "type": "string",
+      "markdownDescription": "Display name of the block (and its generated item). Default: generated from the id.",
+      "description": "Display name of the block (and its generated item). Default: generated from the id."
+    },
+    "texture": {
+      "type": "string",
+      "markdownDescription": "Block texture name (name of the file in `textures/blocks/` with no path and extension included, just name)\n\nTexture file must be a **png** image\n\nMutually exclusive with `texture-faces`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#texture)",
+      "description": "Block texture name (name of the file in textures/blocks/ with no path and extension included, just name)\n\nTexture file must be a png image\n\nMutually exclusive with texture-faces."
+    },
+    "texture-faces": {
+      "$ref": "#/definitions/textureFaces",
+      "markdownDescription": "> **Important:** Can't be used if `texture` already specified\n\nAn array of 6 texture names for block sides.\n\nExample:\n```json\n\"texture-faces\": [\n    \"grass_side\",\n    \"grass_side\",\n    \"dirt\",\n    \"grass_top\",\n    \"grass_side\",\n    \"grass_side\"\n]\n```\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#texture-faces)",
+      "description": "Important: Can't be used if texture already specified\n\nAn array of 6 texture names for block sides.\n\nExample:\n\"texture-faces\": [\n    \"grass_side\",\n    \"grass_side\",\n    \"dirt\",\n    \"grass_top\",\n    \"grass_side\",\n    \"grass_side\"\n]"
+    },
+    "model": {
+      "type": "string",
+      "default": "block",
+      "enum": [
+        "none",
+        "block",
+        "X",
+        "aabb",
+        "custom"
+      ],
+      "markdownDescription": "Block model type from list:\n- \"block\" - default block model\n- \"none\" - invisible block (air)\n- \"X\" - grass model (two crossed sprites)\n- \"aabb\" - model based on block hitbox (complex hitbox will be combined into one). Examples: pipes, bulbs, panels.\n- \"custom\" - used when specifying custom models via *model-name*\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#model)",
+      "description": "Block model type from list:\n- \"block\" - default block model\n- \"none\" - invisible block (air)\n- \"X\" - grass model (two crossed sprites)\n- \"aabb\" - model based on block hitbox (complex hitbox will be combined into one). Examples: pipes, bulbs, panels.\n- \"custom\" - used when specifying custom models via model-name",
+      "markdownEnumDescriptions": [
+        "invisible block (air)",
+        "default block model",
+        "grass model (two crossed sprites)",
+        "model based on block hitbox (complex hitbox will be combined into one). Examples: pipes, bulbs, panels.",
+        "used when specifying custom models via *model-name*"
+      ],
+      "enumDescriptions": [
+        "invisible block (air)",
+        "default block model",
+        "grass model (two crossed sprites)",
+        "model based on block hitbox (complex hitbox will be combined into one). Examples: pipes, bulbs, panels.",
+        "used when specifying custom models via model-name"
+      ]
+    },
+    "model-name": {
+      "type": "string",
+      "markdownDescription": "In addition to built-in model types, you can use your own, loaded from file.\n\nThe property specifies the model name without `entry_point:models/` nor extension.\n\n> **Warning:** Textures (materials) used in the model must be in the `blocks` atlas and specified in the *atlas-texture* format:\n`blocks:texture_name`\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#model-name)",
+      "description": "In addition to built-in model types, you can use your own, loaded from file.\n\nThe property specifies the model name without entry_point:models/ nor extension.\n\nWarning: Textures (materials) used in the model must be in the blocks atlas and specified in the atlas-texture format:\nblocks:texture_name"
+    },
+    "model-primitives": {
+      "$ref": "#/definitions/modelPrimitives",
+      "markdownDescription": "> **Warning:** The `model-primitives` property is deprecated. Use the [VCM format](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/vcm.md) for a textual description of the model's primitives.\n\nBlock model may be created with following properties:\n\n```js\n\"model\": \"custom\",\n\"model-primitives\": {\n    \"aabbs\": [\n\t    // list of AABB primitives\n    ],\n    // ... other primitives\n}\n```\n\n**AABB** primitive is an array of values:\n```\n[x, y, z, width, height, depth, texture names for all 6 sides]\n```\n\n**tetragon** primitive (more like parallelogram) an array of three vectors, describing primitive position, X vector \\* width, Y vector \\* height.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-models.md#block-models-deprecated)",
+      "description": "Warning: The model-primitives property is deprecated. Use the VCM format for a textual description of the model's primitives.\n\nBlock model may be created with following properties:\n\n\"model\": \"custom\",\n\"model-primitives\": {\n    \"aabbs\": [\n\t    // list of AABB primitives\n    ],\n    // ... other primitives\n}\n\nAABB primitive is an array of values:\n[x, y, z, width, height, depth, texture names for all 6 sides]\n\ntetragon primitive (more like parallelogram) an array of three vectors, describing primitive position, X vector \\ width, Y vector \\ height."
+    },
+    "culling": {
+      "type": "string",
+      "default": "default",
+      "enum": [
+        "default",
+        "optional",
+        "disabled"
+      ],
+      "markdownDescription": "Face culling mode:\n- **default** - normal face culling\n- **optional** - face culling among blocks of the same rendering group can be disabled via the `graphics.dense-render` setting.\n- **disabled** - face culling among blocks of the same rendering group disabled.\n\nIn `optional` mode, disabling `graphics.dense-render` will use the `*_opaque` texture variant (if available).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#culling)",
+      "description": "Face culling mode:\n- default - normal face culling\n- optional - face culling among blocks of the same rendering group can be disabled via the graphics.dense-render setting.\n- disabled - face culling among blocks of the same rendering group disabled.\n\nIn optional mode, disabling graphics.dense-render will use the *_opaque texture variant (if available).",
+      "markdownEnumDescriptions": [
+        "normal face culling",
+        "face culling among blocks of the same rendering group can be disabled via the `graphics.dense-render` setting.",
+        "face culling among blocks of the same rendering group disabled."
+      ],
+      "enumDescriptions": [
+        "normal face culling",
+        "face culling among blocks of the same rendering group can be disabled via the graphics.dense-render setting.",
+        "face culling among blocks of the same rendering group disabled."
+      ]
+    },
+    "draw-group": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "default": 0,
+      "markdownDescription": "Integer specifying number of block draw group (render order). Used for semi-transparent blocks.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#draw-group)",
+      "description": "Integer specifying number of block draw group (render order). Used for semi-transparent blocks.\n\nDefault: 0."
+    },
+    "translucent": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "Enables translucency support in block textures (examples: water, ice).\nShould only be used when needed, as it impacts performance.\nNot required for full transparency (grass, flowers).\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#translucent)",
+      "description": "Enables translucency support in block textures (examples: water, ice).\nShould only be used when needed, as it impacts performance.\nNot required for full transparency (grass, flowers).\n\nDefault: false."
+    },
+    "solid": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "Explicitly specifies that the block is solid - completely overlapping the blocks behind it.\nUsed by blocks with the `custom` model type, which must support culling of invisible geometry, as with the `block` type. If `false` specified then ignored.\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#solid)",
+      "description": "Explicitly specifies that the block is solid - completely overlapping the blocks behind it.\nUsed by blocks with the custom model type, which must support culling of invisible geometry, as with the block type. If false specified then ignored.\n\nDefault: false."
+    },
+    "rotation": {
+      "type": "string",
+      "default": "none",
+      "enum": [
+        "none",
+        "pipe",
+        "pane",
+        "stairs",
+        "ladder"
+      ],
+      "markdownDescription": "Rotation profile (set of available block rotations and behaviour of placing block rotation) from list:\n\n- \"none\" - no rotation available (default profile)\n- \"pipe\" - wood logs, pipes, pillars\n- \"pane\" - panels, doors, signs\n- \"stairs\" - \"pane\" + flipped variants\n- \"ladder\" - like a \"pipe\", but on horizontal surfaces it is installed like \"pane\"\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#rotation)",
+      "description": "Rotation profile (set of available block rotations and behaviour of placing block rotation) from list:\n\n- \"none\" - no rotation available (default profile)\n- \"pipe\" - wood logs, pipes, pillars\n- \"pane\" - panels, doors, signs\n- \"stairs\" - \"pane\" + flipped variants\n- \"ladder\" - like a \"pipe\", but on horizontal surfaces it is installed like \"pane\"",
+      "markdownEnumDescriptions": [
+        "no rotation available (default profile)",
+        "wood logs, pipes, pillars",
+        "panels, doors, signs",
+        "\"pane\" + flipped variants",
+        "like a \"pipe\", but on horizontal surfaces it is installed like \"pane\""
+      ],
+      "enumDescriptions": [
+        "no rotation available (default profile)",
+        "wood logs, pipes, pillars",
+        "panels, doors, signs",
+        "\"pane\" + flipped variants",
+        "like a \"pipe\", but on horizontal surfaces it is installed like \"pane\""
+      ]
+    },
+    "particles": {
+      "$ref": "#/definitions/particles",
+      "markdownDescription": "Particles are specified as a JSON object. Property names can be found [in the particles section](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md).\n\nWhen camera is near to the block, the engine will create an emitter that will run\nuntil the block is destroyed or the camera moves away a certain distance.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#particles)",
+      "description": "Particles are specified as a JSON object. Property names can be found in the particles section.\n\nWhen camera is near to the block, the engine will create an emitter that will run\nuntil the block is destroyed or the camera moves away a certain distance."
+    },
+    "material": {
+      "type": "string",
+      "markdownDescription": "Defines the name of the block's material in the format `pack:material_name`, which affects the selection of block interaction sounds.\nMaterial definitions are located in /block_materials.\n\nDefault: `block-material` from `config/defaults.toml` (base: `base:stone`).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#material---material)",
+      "description": "Defines the name of the block's material in the format pack:material_name, which affects the selection of block interaction sounds.\nMaterial definitions are located in /block_materials.\n\nDefault: block-material from config/defaults.toml (base: base:stone)."
+    },
+    "state-based": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7,
+          "default": 0,
+          "markdownDescription": "Bit offset in the block's user bits where the variant index starts.\n\nDefault: `0`.",
+          "description": "Bit offset in the block's user bits where the variant index starts.\n\nDefault: 0."
+        },
+        "bits": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "default": 4,
+          "markdownDescription": "Number of bits encoding the variant index (`offset + bits` must not exceed 8). At most 16 variants exist, so more than 4 bits is not useful.\n\nDefault: `4`.",
+          "description": "Number of bits encoding the variant index (offset + bits must not exceed 8). At most 16 variants exist, so more than 4 bits is not useful.\n\nDefault: 4."
+        },
+        "variants": {
+          "type": "array",
+          "maxItems": 15,
+          "items": {
+            "$ref": "#/definitions/variant"
+          },
+          "markdownDescription": "Variants 1..N (variant 0 is the block's root definition). Each variant starts as a copy of the root and may override `model`, `model-name`, `texture`, `texture-faces`, `model-primitives`, `culling` and `draw-group`. Up to 15 entries (16 variants in total).",
+          "description": "Variants 1..N (variant 0 is the block's root definition). Each variant starts as a copy of the root and may override model, model-name, texture, texture-faces, model-primitives, culling and draw-group. Up to 15 entries (16 variants in total)."
+        }
+      },
+      "markdownDescription": "Some properties can vary dynamically, depending on the variant number stored in the user bits of the block.\n\nVariability parameters are specified in the `state-based` block:\n\n```json\n{\n    ...\n    \"state-based\": {\n        \"offset\": 0,\n        \"bits\": 4,\n        \"variants\": [\n            {...},\n            ...\n        ]\n    }\n}\n```\n\n- `offset` specifies the bit offset from which the variant index starts. (Default is 0)\n- `bits` specifies the number of bits encoding the variant index. (Default is 4).\nCurrently, the maximum number of variants is 16, so specifying more than 4 bits does not make practical sense.\n\nProperties available for variance:\n- model\n- model-name\n- texture\n- texture-faces\n- model-primitives (deprecated)\n\nVariants are managed via `block.set_variant(x, y, z, index)`.\n\n### Custom model variants (geometry switching)\n\nYou can use different custom models for different variants. Provide a separate `model-name` for each variant that needs different geometry. The renderer caches geometry per (block id, variant).\n\nThe base model (specified in root) becomes variant 0. The variants array maps to indices 1+.\n\nExample (default + two custom variants):\n```json\n{\n    \"model\": \"custom\",\n    \"model-name\": \"stairs_middle\",\n    \"state-based\": {\n        \"bits\": 4,\n        \"variants\": [\n            { \"model\": \"custom\", \"model-name\": \"stairs_left\" },\n            { \"model\": \"custom\", \"model-name\": \"stairs_right\" }\n        ]\n    }\n}\n```\n\nIn this example:\n- Variant 0 = `stairs_middle` (from root)\n- Variant 1 = `stairs_left` (from variants[0])\n- Variant 2 = `stairs_right` (from variants[1])\n\n_Not available in `block.properties` (removed by `res/scripts/post_content.lua`)._\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#variants)",
+      "description": "Some properties can vary dynamically, depending on the variant number stored in the user bits of the block.\n\nVariability parameters are specified in the state-based block:\n\n{\n    ...\n    \"state-based\": {\n        \"offset\": 0,\n        \"bits\": 4,\n        \"variants\": [\n            {...},\n            ...\n        ]\n    }\n}\n\n- offset specifies the bit offset from which the variant index starts. (Default is 0)\n- bits specifies the number of bits encoding the variant index. (Default is 4).\nCurrently, the maximum number of variants is 16, so specifying more than 4 bits does not make practical sense.\n\nProperties available for variance:\n- model\n- model-name\n- texture\n- texture-faces\n- model-primitives (deprecated)\n\nVariants are managed via block.set_variant(x, y, z, index).\n\nCustom model variants (geometry switching)\n\nYou can use different custom models for different variants. Provide a separate model-name for each variant that needs different geometry. The renderer caches geometry per (block id, variant).\n\nThe base model (specified in root) becomes variant 0. The variants array maps to indices 1+.\n\nExample (default + two custom variants):\n{\n    \"model\": \"custom\",\n    \"model-name\": \"stairs_middle\",\n    \"state-based\": {\n        \"bits\": 4,\n        \"variants\": [\n            { \"model\": \"custom\", \"model-name\": \"stairs_left\" },\n            { \"model\": \"custom\", \"model-name\": \"stairs_right\" }\n        ]\n    }\n}\n\nIn this example:\n- Variant 0 = stairs_middle (from root)\n- Variant 1 = stairs_left (from variants[0])\n- Variant 2 = stairs_right (from variants[1])\n\n_Not available in block.properties (removed by res/scripts/post_content.lua)._"
+    },
+    "emission": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 15
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [
+        0,
+        0,
+        0
+      ],
+      "defaultSnippets": [
+        {
+          "label": "[r, g, b]",
+          "body": [
+            "${1:15}",
+            "${2:15}",
+            "${3:15}"
+          ]
+        }
+      ],
+      "markdownDescription": "An array of 3 integers - R, G, B of light in range \\[0, 15\\]\n\nExamples:\n\n- *\\[15, 15, 15\\]* - white with maximal intensity\n- *\\[7, 0, 0\\]* - dim red light\n- *\\[0, 0, 0\\]* - no emission (default value)\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#emission)",
+      "description": "An array of 3 integers - R, G, B of light in range [0, 15]\n\nExamples:\n\n- [15, 15, 15] - white with maximal intensity\n- [7, 0, 0] - dim red light\n- [0, 0, 0] - no emission (default value)"
+    },
+    "light-passing": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "Light ignores block if **true**\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#light-passing)",
+      "description": "Light ignores block if true\n\nDefault: false."
+    },
+    "sky-light-passing": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "Vertical sky light ray ignores block if **true**. (used for water)\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#sky-light-passing)",
+      "description": "Vertical sky light ray ignores block if true. (used for water)\n\nDefault: false."
+    },
+    "shadeless": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "Turns off block model shading\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#shadeless)",
+      "description": "Turns off block model shading\n\nDefault: false."
+    },
+    "ambient-occlusion": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "Determines the presence of the vertex AO effect. Turned-on by default.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#ambient-occlusion-vertex-based-ambient-occlusion)",
+      "description": "Determines the presence of the vertex AO effect. Turned-on by default."
+    },
+    "obstacle": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "Block is not a physical obstacle if **false**\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#obstacle)",
+      "description": "Block is not a physical obstacle if false\n\nDefault: true."
+    },
+    "hitbox": {
+      "$ref": "#/definitions/hitbox",
+      "markdownDescription": "An array of 6 numbers describing an offset and size of a block hitbox.\n\nThe numbers are specified in the range [0.0, 1.0] - i.e. within the block (in the case of an extended block, the hitbox can be larger than one, but must not go beyond the \"size\" property).\n\nArray *\\[0.25, 0.0, 0.5,  0.75, 0.4, 0.3\\]* describes hitbox width:\n- offset 0.25m west\n- offset 0.0m up\n- offset 0.5m south\n- 0.75m width (from west to east)\n- 0.4m height\n- 0.3m length (from north to south)\n\nFor composite hitboxes, the *hitboxes* property is used - an array of hitboxes, for example:\n\n```json\n\"hitboxes\": [\n  [0, 0, 0, 1, 0.625, 1],\n  [0, 0.6875, 0, 1, 0.3125, 1]\n]\n```\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#hitbox)",
+      "description": "An array of 6 numbers describing an offset and size of a block hitbox.\n\nThe numbers are specified in the range [0.0, 1.0] - i.e. within the block (in the case of an extended block, the hitbox can be larger than one, but must not go beyond the \"size\" property).\n\nArray [0.25, 0.0, 0.5,  0.75, 0.4, 0.3] describes hitbox width:\n- offset 0.25m west\n- offset 0.0m up\n- offset 0.5m south\n- 0.75m width (from west to east)\n- 0.4m height\n- 0.3m length (from north to south)\n\nFor composite hitboxes, the hitboxes property is used - an array of hitboxes, for example:\n\n\"hitboxes\": [\n  [0, 0, 0, 1, 0.625, 1],\n  [0, 0.6875, 0, 1, 0.3125, 1]\n]"
+    },
+    "hitboxes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/hitbox"
+      },
+      "markdownDescription": "An array of 6 numbers describing an offset and size of a block hitbox.\n\nThe numbers are specified in the range [0.0, 1.0] - i.e. within the block (in the case of an extended block, the hitbox can be larger than one, but must not go beyond the \"size\" property).\n\nArray *\\[0.25, 0.0, 0.5,  0.75, 0.4, 0.3\\]* describes hitbox width:\n- offset 0.25m west\n- offset 0.0m up\n- offset 0.5m south\n- 0.75m width (from west to east)\n- 0.4m height\n- 0.3m length (from north to south)\n\nFor composite hitboxes, the *hitboxes* property is used - an array of hitboxes, for example:\n\n```json\n\"hitboxes\": [\n  [0, 0, 0, 1, 0.625, 1],\n  [0, 0.6875, 0, 1, 0.3125, 1]\n]\n```\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#hitbox)",
+      "description": "An array of 6 numbers describing an offset and size of a block hitbox.\n\nThe numbers are specified in the range [0.0, 1.0] - i.e. within the block (in the case of an extended block, the hitbox can be larger than one, but must not go beyond the \"size\" property).\n\nArray [0.25, 0.0, 0.5,  0.75, 0.4, 0.3] describes hitbox width:\n- offset 0.25m west\n- offset 0.0m up\n- offset 0.5m south\n- 0.75m width (from west to east)\n- 0.4m height\n- 0.3m length (from north to south)\n\nFor composite hitboxes, the hitboxes property is used - an array of hitboxes, for example:\n\n\"hitboxes\": [\n  [0, 0, 0, 1, 0.625, 1],\n  [0, 0.6875, 0, 1, 0.3125, 1]\n]"
+    },
+    "grounded": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "Block may only be placed on a solid block and is destroyed when the block below is destroyed.\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#grounded)",
+      "description": "Block may only be placed on a solid block and is destroyed when the block below is destroyed.\n\nDefault: false."
+    },
+    "selectable": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "Cursor ray will ignore block if **false**.\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#selectable)",
+      "description": "Cursor ray will ignore block if false.\n\nDefault: true."
+    },
+    "replaceable": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "Is block replaceable. Examples: air, water, grass, flower.\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#replaceable)",
+      "description": "Is block replaceable. Examples: air, water, grass, flower.\n\nDefault: false."
+    },
+    "breakable": {
+      "type": "boolean",
+      "default": true,
+      "markdownDescription": "Is block breakable by mouse click.\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#breakable)",
+      "description": "Is block breakable by mouse click.\n\nDefault: true."
+    },
+    "hidden": {
+      "type": "boolean",
+      "default": false,
+      "markdownDescription": "If **true** an item will not be generated for block. **picking-item** must be specified\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#hidden)",
+      "description": "If true an item will not be generated for block. picking-item must be specified\n\nDefault: false."
+    },
+    "picking-item": {
+      "type": "string",
+      "markdownDescription": "Item will be chosen on MMB click on the block.\n\nExample: block `door:door_open` is hidden, so you need to specify `picking-item: \"door:door.item\"` to bind it to not hidden `door:door` block item.\n\nDefault: `<block id>.item` (`core:empty` for hidden blocks).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#picking-item)",
+      "description": "Item will be chosen on MMB click on the block.\n\nExample: block door:door_open is hidden, so you need to specify picking-item: \"door:door.item\" to bind it to not hidden door:door block item.\n\nDefault: <block id>.item (core:empty for hidden blocks)."
+    },
+    "ui-layout": {
+      "type": "string",
+      "markdownDescription": "Block UI XML layout name. Default: string block id.\n\nExamples for block `containermod:container`:\n- default: `containermod:container` (*containermod/layouts/container.xml*)\n- if `containermod:randombox` specified: (*containermod/layouts/randombox.xml*)\n\nDefault: the block id.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#ui-layout)",
+      "description": "Block UI XML layout name. Default: string block id.\n\nExamples for block containermod:container:\n- default: containermod:container (containermod/layouts/container.xml)\n- if containermod:randombox specified: (containermod/layouts/randombox.xml)\n\nDefault: the block id."
+    },
+    "inventory-size": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "markdownDescription": "Number of block inventory slots. Default - 0 (no inventory).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#inventory-size)",
+      "description": "Number of block inventory slots. Default - 0 (no inventory)."
+    },
+    "size": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 16
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [
+        1,
+        1,
+        1
+      ],
+      "defaultSnippets": [
+        {
+          "label": "[x, y, z]",
+          "body": [
+            "${1:1}",
+            "${2:2}",
+            "${3:1}"
+          ]
+        }
+      ],
+      "markdownDescription": "Array of three integers. Default value is `[1, 1, 1]`.\n\nEach component must be in `[1, 16]` (`EXTENDED_BLOCK_LIMIT`). A `block`-model block with a size other than `[1, 1, 1]` becomes an `aabb` model with a hitbox of that size.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#size)",
+      "description": "Array of three integers. Default value is [1, 1, 1].\n\nEach component must be in [1, 16] (EXTENDED_BLOCK_LIMIT). A block-model block with a size other than [1, 1, 1] becomes an aabb model with a hitbox of that size."
+    },
+    "grounding-behaviour": {
+      "type": "string",
+      "default": "partial",
+      "enum": [
+        "partial",
+        "complete",
+        "origin"
+      ],
+      "markdownDescription": "Defines the behavior of the extended grounded block. Available behavior options:\n\n- \"partial\" - at least one segment must be grounded (default)\n- \"complete\" - all segments must be grounded\n- \"origin\" - origin segment must be grounded\n\nOnly read when `size` is specified.\n\n_Not available in `block.properties` (removed by `res/scripts/post_content.lua`)._\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#grounding-behaviour)",
+      "description": "Defines the behavior of the extended grounded block. Available behavior options:\n\n- \"partial\" - at least one segment must be grounded (default)\n- \"complete\" - all segments must be grounded\n- \"origin\" - origin segment must be grounded\n\nOnly read when size is specified.\n\n_Not available in block.properties (removed by res/scripts/post_content.lua)._",
+      "markdownEnumDescriptions": [
+        "at least one segment must be grounded (default)",
+        "all segments must be grounded",
+        "origin segment must be grounded"
+      ],
+      "enumDescriptions": [
+        "at least one segment must be grounded (default)",
+        "all segments must be grounded",
+        "origin segment must be grounded"
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[^.]"
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/field"
+      },
+      "markdownDescription": "Block fields allow you to write more data unique to a specified voxel than the user bits allow.\n\nBlock fields are declared in the following format:\n\n```json\n\"fields\": {\n    \"name\": {\"type\": \"data_type\"},\n    \"array_name\": {\"type\": \"data_type\", \"length\": \"array_length\"}\n}\n```\n\nIn addition to `type` and `length`, the `convert-strategy` parameter determines the value conversion strategy when narrowing the data type.\n\nThe parameter takes one of two values:\n- `reset` - a value that does not exist in the new range will be reset to 0\n- `clamp` - the value will be reduced to the closest one in the new range\n\nExample: the number 231 when changing the field type from int16 to int8:\n- in `reset` mode will turn into 0\n- in `clamp` mode will turn into 127\n\nAvailable data types:\n\n| Type    | Size      | Description            |\n| ------- | --------- | ---------------------- |\n| int8    | 1 byte    | signed integer 8 bits  |\n| int16   | 2 bytes   | signed integer 16 bits |\n| int32   | 4 bytes   | signed integer 32 bits |\n| int64   | 8 bytes   | integer signed 64 bits |\n| float32 | 4 bytes   | floating-point 32 bits |\n| float64 | 8 bytes   | floating-point 64 bits |\n| char    | 1 byte    | character              |\n\n- Currently, the total sum of the field sizes cannot exceed 240 bytes.\n- A field without an array length specification is equivalent to an array of 1 element.\n- A character array can be used to store UTF-8 strings.\n\nField names must not start with `.`; the total size of all fields must not exceed 240 bytes.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#block-fields)",
+      "description": "Block fields allow you to write more data unique to a specified voxel than the user bits allow.\n\nBlock fields are declared in the following format:\n\n\"fields\": {\n    \"name\": {\"type\": \"data_type\"},\n    \"array_name\": {\"type\": \"data_type\", \"length\": \"array_length\"}\n}\n\nIn addition to type and length, the convert-strategy parameter determines the value conversion strategy when narrowing the data type.\n\nThe parameter takes one of two values:\n- reset - a value that does not exist in the new range will be reset to 0\n- clamp - the value will be reduced to the closest one in the new range\n\nExample: the number 231 when changing the field type from int16 to int8:\n- in reset mode will turn into 0\n- in clamp mode will turn into 127\n\nAvailable data types:\n\n| Type    | Size      | Description            |\n| ------- | --------- | ---------------------- |\n| int8    | 1 byte    | signed integer 8 bits  |\n| int16   | 2 bytes   | signed integer 16 bits |\n| int32   | 4 bytes   | signed integer 32 bits |\n| int64   | 8 bytes   | integer signed 64 bits |\n| float32 | 4 bytes   | floating-point 32 bits |\n| float64 | 8 bytes   | floating-point 64 bits |\n| char    | 1 byte    | character              |\n\n- Currently, the total sum of the field sizes cannot exceed 240 bytes.\n- A field without an array length specification is equivalent to an array of 1 element.\n- A character array can be used to store UTF-8 strings.\n\nField names must not start with .; the total size of all fields must not exceed 240 bytes."
+    },
+    "surface-replacement": {
+      "type": "string",
+      "markdownDescription": "Id of the block that replaces this one when it ends up under a placed block (e.g. grass turning into dirt). Default: the block itself.",
+      "description": "Id of the block that replaces this one when it ends up under a placed block (e.g. grass turning into dirt). Default: the block itself."
+    },
+    "overlay-texture": {
+      "type": "string",
+      "markdownDescription": "Texture drawn over the block (name in the `blocks` atlas). Used by the base pack for grass side overlays. Default: none.",
+      "description": "Texture drawn over the block (name in the blocks atlas). Used by the base pack for grass side overlays. Default: none."
+    },
+    "script-name": {
+      "type": "string",
+      "markdownDescription": "Used to specify block script name (to reuse one script to multiple blocks). Name must not contain `packid:scripts/` and extension. Just name.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#script-name)",
+      "description": "Used to specify block script name (to reuse one script to multiple blocks). Name must not contain packid:scripts/ and extension. Just name."
+    },
+    "tick-interval": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1,
+      "markdownDescription": "The interval in ticks (1/20th of a second). A value of 20 results in an on_block_tick call interval of one second.\n\n`0` is treated as `1`.\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#tick-interval---tick-interval)",
+      "description": "The interval in ticks (1/20th of a second). A value of 20 results in an on_block_tick call interval of one second.\n\n0 is treated as 1.\n\nDefault: 1."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "markdownDescription": "Tags allow you to designate general properties of blocks. Names should be formatted as `prefix:tag_name`.\nThe prefix is optional, but helps avoid unwanted logical collisions. Example:\n\n```json\n{\n    \"tags\": [\n        \"core:ore\",\n        \"base_survival:food\",\n    ]\n}\n```\n\nBlock tags can also be added from other packs using the `your_pack:tags.toml` file. Example:\n\n```toml\n\"prefix:tag_name\" = [\n    \"random_pack:some_block\",\n    \"another_pack:item\",\n]\n\"other_prefix:other_tag_name\" = [\n    # ...\n]\n```\n\n_Not available in `block.properties` (removed by `res/scripts/post_content.lua`)._\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#tags)",
+      "description": "Tags allow you to designate general properties of blocks. Names should be formatted as prefix:tag_name.\nThe prefix is optional, but helps avoid unwanted logical collisions. Example:\n\n{\n    \"tags\": [\n        \"core:ore\",\n        \"base_survival:food\",\n    ]\n}\n\nBlock tags can also be added from other packs using the your_pack:tags.toml file. Example:\n\n\"prefix:tag_name\" = [\n    \"random_pack:some_block\",\n    \"another_pack:item\",\n]\n\"other_prefix:other_tag_name\" = [\n    # ...\n]\n\n_Not available in block.properties (removed by res/scripts/post_content.lua)._"
+    },
+    "base:durability": {
+      "type": "number",
+      "minimum": 0,
+      "markdownDescription": "The time it takes to break a block without tools or effects, measured in seconds.\n\nUser property of the `base` pack.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#basedurability)",
+      "description": "The time it takes to break a block without tools or effects, measured in seconds.\n\nUser property of the base pack."
+    },
+    "base:loot": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "type": "string",
+            "description": "Item id, e.g. `base:dirt.item`."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 1,
+            "description": "Fixed count (ignored when `min` and `max` are set)."
+          },
+          "min": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Minimum count."
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Maximum count."
+          },
+          "chance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 1,
+            "description": "Drop probability."
+          }
+        },
+        "additionalProperties": false
+      },
+      "markdownDescription": "A list of tables with properties:\n\n```json\n{\n    \"item\": \"pack:item\",\n    \"min\": 1,\n    \"max\": 3,\n    \"chance\": 0.5\n}\n```\n\n- `count` defaults to 1. It does not need to be specified if `min` and `max` are provided.\n- `min`, `max` - the minimum and maximum quantity of the item.\n- `chance` - the probability of the item dropping. Defaults to 1.0.\n\nIt should be noted that the `item` refers specifically to the item. That is, to specify the item of a block, you need to add `.item` after the block name. \nExample: `base:dirt.item`.\n\nTo generate loot, the function `block_loot(block_id: int)` in the `base:util` module should be used.\n\nUser property of the `base` pack.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#loot---baseloot)",
+      "description": "A list of tables with properties:\n\n{\n    \"item\": \"pack:item\",\n    \"min\": 1,\n    \"max\": 3,\n    \"chance\": 0.5\n}\n\n- count defaults to 1. It does not need to be specified if min and max are provided.\n- min, max - the minimum and maximum quantity of the item.\n- chance - the probability of the item dropping. Defaults to 1.0.\n\nIt should be noted that the item refers specifically to the item. That is, to specify the item of a block, you need to add .item after the block name. \nExample: base:dirt.item.\n\nTo generate loot, the function block_loot(block_id: int) in the base:util module should be used.\n\nUser property of the base pack."
+    },
+    "texture-faces@append": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "markdownDescription": "Method `@append`: appends the value(s) to the list `texture-faces` of a previous definition of this block (e.g. from another pack) instead of replacing it. It affects the Lua-side `block.properties` table; the engine itself reads `texture-faces` directly.",
+      "description": "Method @append: appends the value(s) to the list \"texture-faces\" of a previous definition."
+    },
+    "emission@append": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          }
+        }
+      ],
+      "markdownDescription": "Method `@append`: appends the value(s) to the list `emission` of a previous definition of this block (e.g. from another pack) instead of replacing it. It affects the Lua-side `block.properties` table; the engine itself reads `emission` directly.",
+      "description": "Method @append: appends the value(s) to the list \"emission\" of a previous definition."
+    },
+    "hitbox@append": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      ],
+      "markdownDescription": "Method `@append`: appends the value(s) to the list `hitbox` of a previous definition of this block (e.g. from another pack) instead of replacing it. It affects the Lua-side `block.properties` table; the engine itself reads `hitbox` directly.",
+      "description": "Method @append: appends the value(s) to the list \"hitbox\" of a previous definition."
+    },
+    "hitboxes@append": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/hitbox"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/hitbox"
+          }
+        }
+      ],
+      "markdownDescription": "Method `@append`: appends the value(s) to the list `hitboxes` of a previous definition of this block (e.g. from another pack) instead of replacing it. It affects the Lua-side `block.properties` table; the engine itself reads `hitboxes` directly.",
+      "description": "Method @append: appends the value(s) to the list \"hitboxes\" of a previous definition."
+    },
+    "size@append": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16
+          }
+        }
+      ],
+      "markdownDescription": "Method `@append`: appends the value(s) to the list `size` of a previous definition of this block (e.g. from another pack) instead of replacing it. It affects the Lua-side `block.properties` table; the engine itself reads `size` directly.",
+      "description": "Method @append: appends the value(s) to the list \"size\" of a previous definition."
+    },
+    "tags@append": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "markdownDescription": "Method `@append`: appends the value(s) to the list `tags` of a previous definition of this block (e.g. from another pack) instead of replacing it. It affects the Lua-side `block.properties` table; the engine itself reads `tags` directly.",
+      "description": "Method @append: appends the value(s) to the list \"tags\" of a previous definition."
+    }
+  },
+  "definitions": {
+    "hitbox": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 6,
+      "maxItems": 6,
+      "default": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "defaultSnippets": [
+        {
+          "label": "full block",
+          "body": [
+            0,
+            0,
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "label": "[x, y, z, w, h, d]",
+          "body": [
+            "${1:0}",
+            "${2:0}",
+            "${3:0}",
+            "${4:1}",
+            "${5:1}",
+            "${6:1}"
+          ]
+        }
+      ],
+      "markdownDescription": "An array of 6 numbers describing an offset and size of a block hitbox.\n\nThe numbers are specified in the range [0.0, 1.0] - i.e. within the block (in the case of an extended block, the hitbox can be larger than one, but must not go beyond the \"size\" property).\n\nArray *\\[0.25, 0.0, 0.5,  0.75, 0.4, 0.3\\]* describes hitbox width:\n- offset 0.25m west\n- offset 0.0m up\n- offset 0.5m south\n- 0.75m width (from west to east)\n- 0.4m height\n- 0.3m length (from north to south)\n\nFor composite hitboxes, the *hitboxes* property is used - an array of hitboxes, for example:\n\n```json\n\"hitboxes\": [\n  [0, 0, 0, 1, 0.625, 1],\n  [0, 0.6875, 0, 1, 0.3125, 1]\n]\n```\n\nDefault: `[0, 0, 0, 1, 1, 1]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#hitbox)",
+      "description": "An array of 6 numbers describing an offset and size of a block hitbox.\n\nThe numbers are specified in the range [0.0, 1.0] - i.e. within the block (in the case of an extended block, the hitbox can be larger than one, but must not go beyond the \"size\" property).\n\nArray [0.25, 0.0, 0.5,  0.75, 0.4, 0.3] describes hitbox width:\n- offset 0.25m west\n- offset 0.0m up\n- offset 0.5m south\n- 0.75m width (from west to east)\n- 0.4m height\n- 0.3m length (from north to south)\n\nFor composite hitboxes, the hitboxes property is used - an array of hitboxes, for example:\n\n\"hitboxes\": [\n  [0, 0, 0, 1, 0.625, 1],\n  [0, 0.6875, 0, 1, 0.3125, 1]\n]\n\nDefault: [0, 0, 0, 1, 1, 1]."
+    },
+    "textureFaces": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 6,
+      "maxItems": 6,
+      "defaultSnippets": [
+        {
+          "label": "six faces",
+          "body": [
+            "${1:side}",
+            "${1:side}",
+            "${2:bottom}",
+            "${3:top}",
+            "${1:side}",
+            "${1:side}"
+          ]
+        }
+      ],
+      "markdownDescription": "> **Important:** Can't be used if `texture` already specified\n\nAn array of 6 texture names for block sides.\n\nExample:\n```json\n\"texture-faces\": [\n    \"grass_side\",\n    \"grass_side\",\n    \"dirt\",\n    \"grass_top\",\n    \"grass_side\",\n    \"grass_side\"\n]\n```\n\nFace order: `-x` (west), `+x` (east), `-y` (bottom), `+y` (top), `-z` (north), `+z` (south).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#texture-faces)",
+      "description": "Important: Can't be used if texture already specified\n\nAn array of 6 texture names for block sides.\n\nExample:\n\"texture-faces\": [\n    \"grass_side\",\n    \"grass_side\",\n    \"dirt\",\n    \"grass_top\",\n    \"grass_side\",\n    \"grass_side\"\n]\n\nFace order: -x (west), +x (east), -y (bottom), +y (top), -z (north), +z (south)."
+    },
+    "modelPrimitives": {
+      "type": "object",
+      "additionalProperties": false,
+      "deprecationMessage": "model-primitives is deprecated: use a VCM model and model-name.",
+      "properties": {
+        "aabbs": {
+          "type": "array",
+          "description": "[x, y, z, width, height, depth] + optionally 1 texture or 6 textures.",
+          "items": {
+            "type": "array",
+            "minItems": 6,
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "additionalItems": false,
+            "not": {
+              "minItems": 8,
+              "maxItems": 11
+            }
+          }
+        },
+        "tetragons": {
+          "type": "array",
+          "description": "[x, y, z, xw.x, xw.y, xw.z, yh.x, yh.y, yh.z, texture]",
+          "items": {
+            "type": "array",
+            "minItems": 10,
+            "maxItems": 10,
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "markdownDescription": "> **Warning:** The `model-primitives` property is deprecated. Use the [VCM format](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/vcm.md) for a textual description of the model's primitives.\n\nBlock model may be created with following properties:\n\n```js\n\"model\": \"custom\",\n\"model-primitives\": {\n    \"aabbs\": [\n\t    // list of AABB primitives\n    ],\n    // ... other primitives\n}\n```\n\n**AABB** primitive is an array of values:\n```\n[x, y, z, width, height, depth, texture names for all 6 sides]\n```\n\n**tetragon** primitive (more like parallelogram) an array of three vectors, describing primitive position, X vector \\* width, Y vector \\* height.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-models.md#block-models-deprecated)",
+      "description": "Warning: The model-primitives property is deprecated. Use the VCM format for a textual description of the model's primitives.\n\nBlock model may be created with following properties:\n\n\"model\": \"custom\",\n\"model-primitives\": {\n    \"aabbs\": [\n\t    // list of AABB primitives\n    ],\n    // ... other primitives\n}\n\nAABB primitive is an array of values:\n[x, y, z, width, height, depth, texture names for all 6 sides]\n\ntetragon primitive (more like parallelogram) an array of three vectors, describing primitive position, X vector \\ width, Y vector \\ height."
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "not": {
+            "required": [
+              "texture",
+              "texture-faces"
+            ]
+          },
+          "errorMessage": "texture and texture-faces are mutually exclusive: when both are present the engine silently uses texture."
+        }
+      ],
+      "properties": {
+        "texture": {
+          "type": "string",
+          "markdownDescription": "Block texture name (name of the file in `textures/blocks/` with no path and extension included, just name)\n\nTexture file must be a **png** image\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#texture)",
+          "description": "Block texture name (name of the file in textures/blocks/ with no path and extension included, just name)\n\nTexture file must be a png image"
+        },
+        "texture-faces": {
+          "$ref": "#/definitions/textureFaces",
+          "markdownDescription": "> **Important:** Can't be used if `texture` already specified\n\nAn array of 6 texture names for block sides.\n\nExample:\n```json\n\"texture-faces\": [\n    \"grass_side\",\n    \"grass_side\",\n    \"dirt\",\n    \"grass_top\",\n    \"grass_side\",\n    \"grass_side\"\n]\n```\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#texture-faces)",
+          "description": "Important: Can't be used if texture already specified\n\nAn array of 6 texture names for block sides.\n\nExample:\n\"texture-faces\": [\n    \"grass_side\",\n    \"grass_side\",\n    \"dirt\",\n    \"grass_top\",\n    \"grass_side\",\n    \"grass_side\"\n]"
+        },
+        "model": {
+          "type": "string",
+          "default": "block",
+          "enum": [
+            "none",
+            "block",
+            "X",
+            "aabb",
+            "custom"
+          ],
+          "markdownDescription": "Block model type from list:\n- \"block\" - default block model\n- \"none\" - invisible block (air)\n- \"X\" - grass model (two crossed sprites)\n- \"aabb\" - model based on block hitbox (complex hitbox will be combined into one). Examples: pipes, bulbs, panels.\n- \"custom\" - used when specifying custom models via *model-name*\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#model)",
+          "description": "Block model type from list:\n- \"block\" - default block model\n- \"none\" - invisible block (air)\n- \"X\" - grass model (two crossed sprites)\n- \"aabb\" - model based on block hitbox (complex hitbox will be combined into one). Examples: pipes, bulbs, panels.\n- \"custom\" - used when specifying custom models via model-name",
+          "markdownEnumDescriptions": [
+            "invisible block (air)",
+            "default block model",
+            "grass model (two crossed sprites)",
+            "model based on block hitbox (complex hitbox will be combined into one). Examples: pipes, bulbs, panels.",
+            "used when specifying custom models via *model-name*"
+          ],
+          "enumDescriptions": [
+            "invisible block (air)",
+            "default block model",
+            "grass model (two crossed sprites)",
+            "model based on block hitbox (complex hitbox will be combined into one). Examples: pipes, bulbs, panels.",
+            "used when specifying custom models via model-name"
+          ]
+        },
+        "model-name": {
+          "type": "string",
+          "markdownDescription": "In addition to built-in model types, you can use your own, loaded from file.\n\nThe property specifies the model name without `entry_point:models/` nor extension.\n\n> **Warning:** Textures (materials) used in the model must be in the `blocks` atlas and specified in the *atlas-texture* format:\n`blocks:texture_name`\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#model-name)",
+          "description": "In addition to built-in model types, you can use your own, loaded from file.\n\nThe property specifies the model name without entry_point:models/ nor extension.\n\nWarning: Textures (materials) used in the model must be in the blocks atlas and specified in the atlas-texture format:\nblocks:texture_name"
+        },
+        "model-primitives": {
+          "$ref": "#/definitions/modelPrimitives",
+          "markdownDescription": "> **Warning:** The `model-primitives` property is deprecated. Use the [VCM format](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/vcm.md) for a textual description of the model's primitives.\n\nBlock model may be created with following properties:\n\n```js\n\"model\": \"custom\",\n\"model-primitives\": {\n    \"aabbs\": [\n\t    // list of AABB primitives\n    ],\n    // ... other primitives\n}\n```\n\n**AABB** primitive is an array of values:\n```\n[x, y, z, width, height, depth, texture names for all 6 sides]\n```\n\n**tetragon** primitive (more like parallelogram) an array of three vectors, describing primitive position, X vector \\* width, Y vector \\* height.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-models.md#block-models-deprecated)",
+          "description": "Warning: The model-primitives property is deprecated. Use the VCM format for a textual description of the model's primitives.\n\nBlock model may be created with following properties:\n\n\"model\": \"custom\",\n\"model-primitives\": {\n    \"aabbs\": [\n\t    // list of AABB primitives\n    ],\n    // ... other primitives\n}\n\nAABB primitive is an array of values:\n[x, y, z, width, height, depth, texture names for all 6 sides]\n\ntetragon primitive (more like parallelogram) an array of three vectors, describing primitive position, X vector \\ width, Y vector \\ height."
+        },
+        "culling": {
+          "type": "string",
+          "default": "default",
+          "enum": [
+            "default",
+            "optional",
+            "disabled"
+          ],
+          "markdownDescription": "Face culling mode:\n- **default** - normal face culling\n- **optional** - face culling among blocks of the same rendering group can be disabled via the `graphics.dense-render` setting.\n- **disabled** - face culling among blocks of the same rendering group disabled.\n\nIn `optional` mode, disabling `graphics.dense-render` will use the `*_opaque` texture variant (if available).\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#culling)",
+          "description": "Face culling mode:\n- default - normal face culling\n- optional - face culling among blocks of the same rendering group can be disabled via the graphics.dense-render setting.\n- disabled - face culling among blocks of the same rendering group disabled.\n\nIn optional mode, disabling graphics.dense-render will use the *_opaque texture variant (if available).",
+          "markdownEnumDescriptions": [
+            "normal face culling",
+            "face culling among blocks of the same rendering group can be disabled via the `graphics.dense-render` setting.",
+            "face culling among blocks of the same rendering group disabled."
+          ],
+          "enumDescriptions": [
+            "normal face culling",
+            "face culling among blocks of the same rendering group can be disabled via the graphics.dense-render setting.",
+            "face culling among blocks of the same rendering group disabled."
+          ]
+        },
+        "draw-group": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 0,
+          "markdownDescription": "Integer specifying number of block draw group (render order). Used for semi-transparent blocks.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/block-properties.md#draw-group)",
+          "description": "Integer specifying number of block draw group (render order). Used for semi-transparent blocks.\n\nDefault: 0."
+        }
+      }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Data type.",
+          "enum": [
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "float32",
+            "float64",
+            "char"
+          ]
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Array length (number of elements)."
+        },
+        "convert-strategy": {
+          "type": "string",
+          "default": "reset",
+          "description": "What happens to values out of range when the field type is narrowed: `reset` sets them to 0, `clamp` clamps them to the new range.",
+          "enum": [
+            "reset",
+            "clamp"
+          ]
+        }
+      }
+    },
+    "particles": {
+      "title": "VoxelCore particles preset",
+      "description": "Particle emitter settings (a block's particles object, a weather fall.splash, or the preset table of gfx.particles.emit). All fields are optional.",
+      "markdownDescription": "Particle emitter settings (a block's `particles` object, a weather `fall.splash`, or the `preset` table of `gfx.particles.emit`). All fields are optional.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "texture": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Particle texture.\n\nDefault: `\"\"`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Particle texture.\n\nDefault: \"\"."
+        },
+        "frames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Animation frames (array of texture names). Must be in a single atlas.\n\nWhen set, the first frame replaces `texture` and `random_sub_uv` is forced to 1.\n\nDefault: `[]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Animation frames (array of texture names). Must be in a single atlas.\n\nWhen set, the first frame replaces texture and random_sub_uv is forced to 1.\n\nDefault: []."
+        },
+        "lighting": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Lighting.\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Lighting.\n\nDefault: true."
+        },
+        "collision": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Collision detection.\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Collision detection.\n\nDefault: true."
+        },
+        "global_up_vector": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Use the global up vector instead of the camera-dependent one when orienting particles.\n\nDefault: `false`.",
+          "description": "Use the global up vector instead of the camera-dependent one when orienting particles.\n\nDefault: false."
+        },
+        "max_distance": {
+          "type": "number",
+          "default": 32,
+          "minimum": 0,
+          "markdownDescription": "Maximum distance from the camera at which particles may spawn.\n\nDefault: `32`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum distance from the camera at which particles may spawn.\n\nDefault: 32."
+        },
+        "spawn_interval": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "markdownDescription": "Particle spawn interval in seconds. Also initial spawn delay\n\nDefault: `0.1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Particle spawn interval in seconds. Also initial spawn delay\n\nDefault: 0.1."
+        },
+        "lifetime": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "markdownDescription": "Average lifetime of particles in seconds.\n\nDefault: `5`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Average lifetime of particles in seconds.\n\nDefault: 5."
+        },
+        "lifetime_spread": {
+          "type": "number",
+          "default": 0.2,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Maximum deviation of particle lifetime (from 0.0 to 1.0).\n\nDefault: `0.2`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum deviation of particle lifetime (from 0.0 to 1.0).\n\nDefault: 0.2."
+        },
+        "velocity": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Initial linear velocity of particles.\n\nDefault: `[0, 0, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Initial linear velocity of particles.\n\nDefault: [0, 0, 0]."
+        },
+        "acceleration": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            -16,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Particles acceleration.\n\nDefault: `[0, -16, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Particles acceleration.\n\nDefault: [0, -16, 0]."
+        },
+        "explosion": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            2,
+            2,
+            2
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Force of particles explosion on spawn.\n\nDefault: `[2, 2, 2]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Force of particles explosion on spawn.\n\nDefault: [2, 2, 2]."
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0.1,
+            0.1,
+            0.1
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Size of particles.\n\nDefault: `[0.1, 0.1, 0.1]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Size of particles.\n\nDefault: [0.1, 0.1, 0.1]."
+        },
+        "size_spread": {
+          "type": "number",
+          "default": 0.2,
+          "markdownDescription": "Maximum particle size spread.\n\nDefault: `0.2`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum particle size spread.\n\nDefault: 0.2."
+        },
+        "angle_spread": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Maximum initial rotation angle spread (0 to 1)\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum initial rotation angle spread (0 to 1)\n\nDefault: 0."
+        },
+        "min_angular_vel": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "markdownDescription": "Minimum angular velocity (radians per sec). Non-negative.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Minimum angular velocity (radians per sec). Non-negative.\n\nDefault: 0."
+        },
+        "max_angular_vel": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "markdownDescription": "Maximum angular velocity (radians per sec). Non-negative.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum angular velocity (radians per sec). Non-negative.\n\nDefault: 0."
+        },
+        "spawn_shape": {
+          "type": "string",
+          "default": "ball",
+          "enum": [
+            "ball",
+            "sphere",
+            "box"
+          ],
+          "markdownDescription": "Shape of particle spawn area. (ball/sphere/box)\n\nDefault: `\"ball\"`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Shape of particle spawn area. (ball/sphere/box)\n\nDefault: \"ball\"."
+        },
+        "spawn_spread": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Size of particle spawn area.\n\nDefault: `[0, 0, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Size of particle spawn area.\n\nDefault: [0, 0, 0]."
+        },
+        "spawn_offset": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Offset of particle spawn area.\n\nDefault: `[0, 0, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Offset of particle spawn area.\n\nDefault: [0, 0, 0]."
+        },
+        "random_sub_uv": {
+          "type": "number",
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Size of random texture subregion (1 - entire texture will be used).\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Size of random texture subregion (1 - entire texture will be used).\n\nDefault: 1."
+        }
+      }
+    }
+  },
+  "patternProperties": {
+    "^[A-Za-z_][A-Za-z0-9_]*:[A-Za-z0-9_.-]+$": {
+      "description": "User property (pack:name). It must be declared in some pack's config/user-props.toml, otherwise it is removed from the Lua properties table.",
+      "markdownDescription": "User property (`pack:name`). It must be declared in some pack's `config/user-props.toml`, otherwise `res/scripts/post_content.lua` removes it from the Lua `properties` table. Accessed as `block.properties[id][\"pack:name\"]`."
+    },
+    "^[A-Za-z_][A-Za-z0-9_]*:[A-Za-z0-9_.-]+@append$": {
+      "description": "Appends to a list-valued user property (method @append)."
+    }
+  },
+  "additionalProperties": false
+}

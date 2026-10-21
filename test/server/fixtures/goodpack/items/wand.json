@@ -1,0 +1,6 @@
+{
+    "icon-type": "sprite",
+    "icon": "items:wand",
+    "script-name": "wand",
+    "stack-size": 1
+}

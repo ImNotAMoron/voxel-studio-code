@@ -1,0 +1,35 @@
+{
+  "box": {
+    "prefix": "box",
+    "description": "Box primitive",
+    "body": "@box from (${1:0,0,0}) to (${2:1,1,1})${3: texture \"${4:blocks:name}\"}$0"
+  },
+  "box with parts": {
+    "prefix": "box-parts",
+    "description": "Box with per-side overrides",
+    "body": [
+      "@box from (${1:0,0,0}) to (${2:1,1,1}) {",
+      "\t@part tags (${3:top,bottom}) texture \"${4:blocks:name}\"$0",
+      "}"
+    ]
+  },
+  "rect": {
+    "prefix": "rect",
+    "description": "Rect (parallelogram) primitive",
+    "body": "@rect from (${1:0,0,0}) right (${2:1,0,0}) up (${3:0,1,0})${4: texture \"${5:blocks:name}\"}$0"
+  },
+  "tri": {
+    "prefix": "tri",
+    "description": "Triangle primitive",
+    "body": "@tri a (${1:0,0,0}) b (${2:1,0,0}) c (${3:1,1,0})$0"
+  },
+  "bone": {
+    "prefix": "bone",
+    "description": "Named bone (becomes part of the skeleton)",
+    "body": [
+      "@bone name '${1:name}' move (${2:0,0,0}) {",
+      "\t$0",
+      "}"
+    ]
+  }
+}

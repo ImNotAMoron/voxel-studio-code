@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/user-props.schema.json",
+  "title": "VoxelCore config/user-props.toml",
+  "description": "Declares user properties allowed in block and item definitions (<pack>/config/user-props.toml). Undeclared properties are removed from block.properties / item.properties by res/scripts/post_content.lua.",
+  "markdownDescription": "Declares user properties allowed in block and item definitions (`<pack>/config/user-props.toml`). Undeclared properties are removed from `block.properties` / `item.properties` by `res/scripts/post_content.lua`.",
+  "type": "object",
+  "propertyNames": {
+    "pattern": "^[A-Za-z_][A-Za-z0-9_]*:[A-Za-z0-9_.-]+$",
+    "errorMessage": "User property names must be namespaced: \"pack:property_name\"."
+  },
+  "additionalProperties": {
+    "type": "object",
+    "description": "Property declaration (currently an empty table: `\"pack:prop\" = {}`)."
+  }
+}

@@ -1,0 +1,29 @@
+# Feature coverage model for golden tests (not a real asset).
+@box from (0,0,0) to (1,0.5,1) rotate (30,45,10) origin (0,0,0) texture "blocks:stone" shading off
+@box from (-1,0,-1) to (-0.5,0.25,0) rotate (0.3826834, 0, 0, 0.9238795) delete (top, west) {
+    @part tags (east,top, bottom) texture "items:apple" region (0,0,0.5,0.5)
+    @part tags south region-scale (0.5,1)
+    @part tags (north) texture "$3" region-scale 2
+}
+@box from (2,2,2) to (3,4,2.5) rotate 15
+@rect from (0,1,0) right (1,0,0) up (0,0,1) flip h texture "a"
+@rect from (0,1,0) right (0.5,0,0) up (0,0.5,0) flip v cull-face off region (0.25,0.25,0.75,0.75) region-scale (2,0.5)
+@rect from (0,2,0) right (1,0,0) up (0,1,0) cull-face front normal (0,0,1) shading "on"
+@tri a (0,0,0) b (1,0,0) c (1,1,0) uv (0,0,1,0,1,1)
+@tri a (0,0,0) b (1,0,0) c (0,1,1) region (0.5,0.5,1,1) region-scale (1,2) cull-face off texture "$1"
+@tri a (0,0,0) b (0,0,1) c (0,1,0) cull-face front normal 1 uv (0.5,0.5)
+@bone move (1,0,0) scale (2,1,1) rotate (0,90,0) {
+    @box from (0,0,0) to (0.5,0.5,0.5)
+    @bone name 'arm' move (0,1,0) rotate (0,0,0.3826834,0.9238795) scale 0.5 {
+        @box from (0,0,0) to (1,1,1)
+        @rect from (0,0,0) right (1,0,0) up (0,1,0)
+        @tri a (0,0,0) b (1,0,0) c (1,1,0)
+        @bone name 'hand' move (0,0.5,0) rotate (10,20,30) {
+            @box from (0,0,0) to (0.2,0.2,0.2) texture "x:y"
+        }
+    }
+}
+@bone name 'other' move (0,0,2) scale (1,-1,1) {
+    @box from (0,0,0) to (1,1,1) shading off
+    @rect from (0,0,0) right (1,0,0) up (0,1,0) shading off
+}

@@ -1,0 +1,462 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/weather-preset.schema.json",
+  "title": "VoxelCore weather preset",
+  "description": "Weather preset (<pack>/presets/weather/<name>.json), read by WeatherPreset::deserialize; the same table is passed to gfx.weather.change.",
+  "markdownDescription": "Weather preset (`<pack>/presets/weather/<name>.json`), read by `WeatherPreset::deserialize`; the same table is passed to `gfx.weather.change`.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "fall": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "texture": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Precipitation texture\n\nDefault: `\"\"`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Precipitation texture\n\nDefault: \"\"."
+        },
+        "noise": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Precipitation noise\n\nDefault: `\"\"`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Precipitation noise\n\nDefault: \"\"."
+        },
+        "vspeed": {
+          "type": "number",
+          "default": 1,
+          "markdownDescription": "Precipitation vertical speed\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Precipitation vertical speed\n\nDefault: 1."
+        },
+        "hspeed": {
+          "type": "number",
+          "default": 0.1,
+          "markdownDescription": "Maximum horizontal speed of precipitation\n\nDefault: `0.1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Maximum horizontal speed of precipitation\n\nDefault: 0.1."
+        },
+        "scale": {
+          "type": "number",
+          "default": 0.1,
+          "markdownDescription": "Precipitation UV scale\n\nDefault: `0.1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Precipitation UV scale\n\nDefault: 0.1."
+        },
+        "min_opacity": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "markdownDescription": "Minimum alpha multiplier for precipitation\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Minimum alpha multiplier for precipitation\n\nDefault: 0."
+        },
+        "max_opacity": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "markdownDescription": "Maximum alpha multiplier for precipitation\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Maximum alpha multiplier for precipitation\n\nDefault: 1."
+        },
+        "max_intensity": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "markdownDescription": "Maximum precipitation intensity\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Maximum precipitation intensity\n\nDefault: 1."
+        },
+        "opaque": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Disable precipitation translucency\n\nDefault: `false`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Disable precipitation translucency\n\nDefault: false."
+        },
+        "splash": {
+          "$ref": "#/definitions/particles",
+          "markdownDescription": "Precipitation splash particle settings table\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+          "description": "Precipitation splash particle settings table"
+        }
+      },
+      "markdownDescription": "Precipitation (see table 2)\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Precipitation (see table 2)"
+    },
+    "clouds": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 1,
+      "markdownDescription": "Cloudiness [0.0, 1.0]\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Cloudiness [0.0, 1.0]\n\nDefault: 0."
+    },
+    "fog_opacity": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 1,
+      "markdownDescription": "Maximum fog density [0.0, 1.0]\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Maximum fog density [0.0, 1.0]\n\nDefault: 0."
+    },
+    "fog_dencity": {
+      "type": "number",
+      "default": 1,
+      "markdownDescription": "Fog density\n\nSpelled `dencity` (sic) by the engine.\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Fog density\n\nSpelled dencity (sic) by the engine.\n\nDefault: 1."
+    },
+    "fog_curve": {
+      "type": "number",
+      "default": 1,
+      "markdownDescription": "Fog curve\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Fog curve\n\nDefault: 1."
+    },
+    "thunder_rate": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 1,
+      "markdownDescription": "Thunder rate [0.0, 1.0]\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Thunder rate [0.0, 1.0]\n\nDefault: 0."
+    },
+    "sky_tint": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [
+        1,
+        1,
+        1
+      ],
+      "defaultSnippets": [
+        {
+          "label": "[x, y, z]",
+          "body": [
+            "${1:0}",
+            "${2:0}",
+            "${3:0}"
+          ]
+        }
+      ],
+      "markdownDescription": "Sky color multiplier\n\nDefault: `[1, 1, 1]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Sky color multiplier\n\nDefault: [1, 1, 1]."
+    },
+    "clouds_tint": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [
+        1,
+        1,
+        1
+      ],
+      "defaultSnippets": [
+        {
+          "label": "[x, y, z]",
+          "body": [
+            "${1:0}",
+            "${2:0}",
+            "${3:0}"
+          ]
+        }
+      ],
+      "markdownDescription": "Cloud color multiplier\n\nDefault: `[1, 1, 1]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Cloud color multiplier\n\nDefault: [1, 1, 1]."
+    },
+    "min_sky_light": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [
+        0.2,
+        0.25,
+        0.33
+      ],
+      "defaultSnippets": [
+        {
+          "label": "[x, y, z]",
+          "body": [
+            "${1:0}",
+            "${2:0}",
+            "${3:0}"
+          ]
+        }
+      ],
+      "markdownDescription": "Minimum sky-emitted light (moon)\n\nDefault: `[0.2, 0.25, 0.33]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/scripting/builtins/libgfx-weather.md#gfxweather-library)",
+      "description": "Minimum sky-emitted light (moon)\n\nDefault: [0.2, 0.25, 0.33]."
+    }
+  },
+  "definitions": {
+    "particles": {
+      "title": "VoxelCore particles preset",
+      "description": "Particle emitter settings (a block's particles object, a weather fall.splash, or the preset table of gfx.particles.emit). All fields are optional.",
+      "markdownDescription": "Particle emitter settings (a block's `particles` object, a weather `fall.splash`, or the `preset` table of `gfx.particles.emit`). All fields are optional.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "texture": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Particle texture.\n\nDefault: `\"\"`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Particle texture.\n\nDefault: \"\"."
+        },
+        "frames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Animation frames (array of texture names). Must be in a single atlas.\n\nWhen set, the first frame replaces `texture` and `random_sub_uv` is forced to 1.\n\nDefault: `[]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Animation frames (array of texture names). Must be in a single atlas.\n\nWhen set, the first frame replaces texture and random_sub_uv is forced to 1.\n\nDefault: []."
+        },
+        "lighting": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Lighting.\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Lighting.\n\nDefault: true."
+        },
+        "collision": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Collision detection.\n\nDefault: `true`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Collision detection.\n\nDefault: true."
+        },
+        "global_up_vector": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Use the global up vector instead of the camera-dependent one when orienting particles.\n\nDefault: `false`.",
+          "description": "Use the global up vector instead of the camera-dependent one when orienting particles.\n\nDefault: false."
+        },
+        "max_distance": {
+          "type": "number",
+          "default": 32,
+          "minimum": 0,
+          "markdownDescription": "Maximum distance from the camera at which particles may spawn.\n\nDefault: `32`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum distance from the camera at which particles may spawn.\n\nDefault: 32."
+        },
+        "spawn_interval": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "markdownDescription": "Particle spawn interval in seconds. Also initial spawn delay\n\nDefault: `0.1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Particle spawn interval in seconds. Also initial spawn delay\n\nDefault: 0.1."
+        },
+        "lifetime": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "markdownDescription": "Average lifetime of particles in seconds.\n\nDefault: `5`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Average lifetime of particles in seconds.\n\nDefault: 5."
+        },
+        "lifetime_spread": {
+          "type": "number",
+          "default": 0.2,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Maximum deviation of particle lifetime (from 0.0 to 1.0).\n\nDefault: `0.2`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum deviation of particle lifetime (from 0.0 to 1.0).\n\nDefault: 0.2."
+        },
+        "velocity": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Initial linear velocity of particles.\n\nDefault: `[0, 0, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Initial linear velocity of particles.\n\nDefault: [0, 0, 0]."
+        },
+        "acceleration": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            -16,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Particles acceleration.\n\nDefault: `[0, -16, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Particles acceleration.\n\nDefault: [0, -16, 0]."
+        },
+        "explosion": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            2,
+            2,
+            2
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Force of particles explosion on spawn.\n\nDefault: `[2, 2, 2]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Force of particles explosion on spawn.\n\nDefault: [2, 2, 2]."
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0.1,
+            0.1,
+            0.1
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Size of particles.\n\nDefault: `[0.1, 0.1, 0.1]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Size of particles.\n\nDefault: [0.1, 0.1, 0.1]."
+        },
+        "size_spread": {
+          "type": "number",
+          "default": 0.2,
+          "markdownDescription": "Maximum particle size spread.\n\nDefault: `0.2`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum particle size spread.\n\nDefault: 0.2."
+        },
+        "angle_spread": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Maximum initial rotation angle spread (0 to 1)\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum initial rotation angle spread (0 to 1)\n\nDefault: 0."
+        },
+        "min_angular_vel": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "markdownDescription": "Minimum angular velocity (radians per sec). Non-negative.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Minimum angular velocity (radians per sec). Non-negative.\n\nDefault: 0."
+        },
+        "max_angular_vel": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "markdownDescription": "Maximum angular velocity (radians per sec). Non-negative.\n\nDefault: `0`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Maximum angular velocity (radians per sec). Non-negative.\n\nDefault: 0."
+        },
+        "spawn_shape": {
+          "type": "string",
+          "default": "ball",
+          "enum": [
+            "ball",
+            "sphere",
+            "box"
+          ],
+          "markdownDescription": "Shape of particle spawn area. (ball/sphere/box)\n\nDefault: `\"ball\"`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Shape of particle spawn area. (ball/sphere/box)\n\nDefault: \"ball\"."
+        },
+        "spawn_spread": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Size of particle spawn area.\n\nDefault: `[0, 0, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Size of particle spawn area.\n\nDefault: [0, 0, 0]."
+        },
+        "spawn_offset": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "defaultSnippets": [
+            {
+              "label": "[x, y, z]",
+              "body": [
+                "${1:0}",
+                "${2:0}",
+                "${3:0}"
+              ]
+            }
+          ],
+          "markdownDescription": "Offset of particle spawn area.\n\nDefault: `[0, 0, 0]`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Offset of particle spawn area.\n\nDefault: [0, 0, 0]."
+        },
+        "random_sub_uv": {
+          "type": "number",
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Size of random texture subregion (1 - entire texture will be used).\n\nDefault: `1`.\n\n[Documentation](https://github.com/MihailRis/VoxelCore/blob/main/doc/en/particles.md#particles)",
+          "description": "Size of random texture subregion (1 - entire texture will be used).\n\nDefault: 1."
+        }
+      }
+    }
+  }
+}

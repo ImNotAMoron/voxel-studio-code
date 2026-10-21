@@ -1,0 +1,110 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "VoxelCore Model (VCM)",
+  "scopeName": "source.vcm",
+  "patterns": [{ "include": "#items" }],
+  "repository": {
+    "items": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#element" },
+        { "include": "#attribute" },
+        { "include": "#block" }
+      ]
+    },
+    "comment": {
+      "match": "#.*$",
+      "name": "comment.line.number-sign.vcm"
+    },
+    "block": {
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": { "0": { "name": "punctuation.section.block.begin.vcm" } },
+      "endCaptures": { "0": { "name": "punctuation.section.block.end.vcm" } },
+      "patterns": [{ "include": "#items" }]
+    },
+    "element": {
+      "match": "(@)(box|rect|tri|part|bone|model)\\b|(@)([A-Za-z_][A-Za-z0-9_-]*)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.vcm" },
+        "2": { "name": "entity.name.tag.vcm" },
+        "3": { "name": "punctuation.definition.tag.vcm" },
+        "4": { "name": "entity.name.tag.unknown.vcm" }
+      }
+    },
+    "attribute": {
+      "begin": "\\b([A-Za-z_][A-Za-z0-9_-]*)\\s+",
+      "beginCaptures": { "1": { "name": "entity.other.attribute-name.vcm" } },
+      "end": "(?=[\\s{}@#])|(?<=[)'\"])",
+      "patterns": [{ "include": "#value" }]
+    },
+    "value": {
+      "patterns": [
+        { "include": "#string-double" },
+        { "include": "#string-single" },
+        { "include": "#group" },
+        {
+          "match": "\\G(on|off|front|back|h|v|true|false)(?=[\\s{}@#]|$)",
+          "name": "constant.language.vcm"
+        },
+        {
+          "match": "\\G-?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?(?=[\\s{}@#]|$)",
+          "name": "constant.numeric.vcm"
+        },
+        {
+          "match": "\\G\\$\\d+(?=[\\s{}@#]|$)",
+          "name": "variable.other.placeholder.vcm"
+        },
+        {
+          "match": "\\G[^\\s{}@#]+",
+          "name": "string.unquoted.vcm"
+        }
+      ]
+    },
+    "string-double": {
+      "begin": "\\G\"",
+      "end": "\"",
+      "name": "string.quoted.double.vcm",
+      "patterns": [
+        { "match": "\\\\.", "name": "constant.character.escape.vcm" },
+        { "include": "#texture-ref" }
+      ]
+    },
+    "string-single": {
+      "begin": "\\G'",
+      "end": "'",
+      "name": "string.quoted.single.vcm",
+      "patterns": [
+        { "match": "\\\\.", "name": "constant.character.escape.vcm" },
+        { "include": "#texture-ref" }
+      ]
+    },
+    "texture-ref": {
+      "match": "\\$\\d+",
+      "name": "variable.other.placeholder.vcm"
+    },
+    "group": {
+      "begin": "\\G\\(",
+      "end": "\\)",
+      "beginCaptures": { "0": { "name": "punctuation.section.parens.begin.vcm" } },
+      "endCaptures": { "0": { "name": "punctuation.section.parens.end.vcm" } },
+      "patterns": [{ "include": "#group-content" }]
+    },
+    "group-content": {
+      "patterns": [
+        {
+          "begin": "\\(",
+          "end": "\\)",
+          "patterns": [{ "include": "#group-content" }]
+        },
+        { "match": "-?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?", "name": "constant.numeric.vcm" },
+        { "match": ",", "name": "punctuation.separator.vcm" },
+        { "match": "\\b(top|bottom|north|south|east|west)\\b", "name": "constant.language.side.vcm" },
+        { "match": "[+*/%^-]", "name": "keyword.operator.arithmetic.vcm" },
+        { "match": "\\b(pi|e|t)\\b", "name": "variable.language.vcm" },
+        { "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*\\()", "name": "support.function.vcm" },
+        { "match": "\\b(kl|kr)\\.(value|frame)\\b", "name": "variable.other.member.vcm" }
+      ]
+    }
+  }
+}

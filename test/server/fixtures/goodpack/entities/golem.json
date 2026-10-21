@@ -1,0 +1,15 @@
+{
+    "components": [
+        "goodpack:golem_ai",
+        {
+            "name": "base:drop",
+            "args": {}
+        }
+    ],
+    "skeleton-name": "goodpack:golem",
+    "hitbox": [
+        1,
+        2,
+        1
+    ]
+}

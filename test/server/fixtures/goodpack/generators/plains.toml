@@ -1,0 +1,4 @@
+caption = "Plains"
+biome-parameters = 1
+heightmap-inputs = [1]
+sea-level = 32

@@ -1,0 +1,27 @@
+{
+  "configure": {
+    "prefix": "configure",
+    "description": "Animation metadata",
+    "body": "@configure fps ${1:24} frames ${2:48}$0"
+  },
+  "linear track": {
+    "prefix": "track",
+    "description": "Keyframe track with linear interpolation",
+    "body": [
+      "@${1|rotate,move,scale|} bone ${2:bone_name} by ${3|x,y,z|} curve linear {",
+      "\t@key frame ${4:0} value ${5:0}",
+      "\t@key frame ${6:24} value ${7:45}$0",
+      "}"
+    ]
+  },
+  "expression track": {
+    "prefix": "func",
+    "description": "Track defined by an expression f(t), t in seconds",
+    "body": "@${1|rotate,move,scale|} bone ${2:bone_name} by ${3|x,y,z|} func (${4:sin(t * 2.5) * 10})$0"
+  },
+  "key": {
+    "prefix": "key",
+    "description": "Keyframe",
+    "body": "@key frame ${1:0} value ${2:0}$0"
+  }
+}

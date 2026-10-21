@@ -1,0 +1,52 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "VoxelCore Animation (VCA)",
+  "scopeName": "source.vca",
+  "patterns": [{ "include": "#items" }],
+  "repository": {
+    "items": {
+      "patterns": [
+        { "include": "source.vcm#comment" },
+        { "include": "#directive" },
+        { "include": "#curve-ref" },
+        { "include": "#func" },
+        { "include": "source.vcm#attribute" },
+        { "include": "#block" }
+      ]
+    },
+    "block": {
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": { "0": { "name": "punctuation.section.block.begin.vca" } },
+      "endCaptures": { "0": { "name": "punctuation.section.block.end.vca" } },
+      "patterns": [{ "include": "#items" }]
+    },
+    "directive": {
+      "match": "(@)(move|rotate|scale|zoom|texture|configure|curve|key)\\b|(@)([A-Za-z_][A-Za-z0-9_-]*)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.vca" },
+        "2": { "name": "keyword.control.directive.vca" },
+        "3": { "name": "punctuation.definition.tag.vca" },
+        "4": { "name": "entity.name.tag.unknown.vca" }
+      }
+    },
+    "curve-ref": {
+      "match": "\\b(curve)\\s+(const|linear|bezier|\\.[A-Za-z_][A-Za-z0-9_-]*)(?=[\\s{]|$)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.vca" },
+        "2": { "name": "support.type.curve.vca" }
+      }
+    },
+    "func": {
+      "begin": "\\b(func)\\s+(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "entity.other.attribute-name.vca" },
+        "2": { "name": "punctuation.section.parens.begin.vca" }
+      },
+      "endCaptures": { "0": { "name": "punctuation.section.parens.end.vca" } },
+      "contentName": "meta.embedded.expression.vca",
+      "patterns": [{ "include": "source.vcm#group-content" }]
+    }
+  }
+}

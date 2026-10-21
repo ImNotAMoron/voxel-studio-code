@@ -1,0 +1,16 @@
+@spin by x
+@move bone a by w func (sinn(t))
+@rotate bone a by x curve wobbly {
+    @key frame 0 value 0
+}
+@rotate bone a by y curve .nocurve {
+    @key frame 0 value 0
+}
+@move bone a by x curve bezier {
+    @key frame 0 value 1
+    @frame frame 1 value 2
+}
+@configure rotation-order XYY
+@scale bone a by x bogus 1 func (rand(0, 1))
+@move bone a by z func (e * t)
+@move bone a by z func (t .. 1)

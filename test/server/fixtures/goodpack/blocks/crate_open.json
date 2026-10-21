@@ -1,0 +1,12 @@
+{
+    "hidden": true,
+    "picking-item": "goodpack:crate.item",
+    "texture-faces": [
+        "crate",
+        "crate",
+        "crate",
+        "crate_open",
+        "crate",
+        "crate"
+    ]
+}

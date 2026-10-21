@@ -1,0 +1,17 @@
+@configure fps 24 frames 48 rotation-order ZYX
+@curve name smooth func (kl.value + (kr.value - kl.value) * t)
+@rotate bone arm by z curve linear {
+    @key frame 0 value 0
+    @key frame 12 value 45
+}
+@move bone arm by y func (sin(t * 2) * 0.1 + pi)
+@move by x curve .smooth {
+    @key frame 0 value 0
+    @key frame 24 value 1
+}
+@rotate bone arm by x curve bezier {
+    @key frame 0 value 0 lx 0 ly 0 rx 1 ry 0
+}
+@texture name $0 {
+    @key frame 0 value blocks:crate
+}

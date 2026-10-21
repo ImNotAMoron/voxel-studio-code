@@ -1,0 +1,18 @@
+{
+    "texture": "nope",
+    "material": "base:nope",
+    "picking-item": "base:stone",
+    "parent": "errpack_x:missing",
+    "errpack_x:undeclared": 1,
+    "texure": "x",
+    "name@prepend": [],
+    "hitbox": [0, 0, 0, 1, 2, 1],
+    "emission": [16, 0, 0],
+    "tick-interval": 0,
+    "solid": true,
+    "inventory-size": 4,
+    "script-name": "missing_script",
+    "fields": {"big": {"type": "int64", "length": 31}},
+    "state-based": {"offset": 2, "bits": 7, "variants": [{"texture": "nope2"}]},
+    "material2": 1,
+}

@@ -1,0 +1,51 @@
+{
+    "contributes": {
+        "commands": [
+            {
+                "command": "voxelcore.openPreview",
+                "title": "Open Model Preview",
+                "category": "VoxelCore",
+                "icon": "$(preview)"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "voxelcore.openPreview",
+                    "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceLangId == vcm",
+                    "group": "navigation"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "voxelcore.openPreview",
+                    "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceExtname == .vec3",
+                    "group": "navigation@90"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "voxelcore.openPreview",
+                    "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceExtname == .vec3 || activeCustomEditorId == voxelcore.vec3Preview"
+                }
+            ]
+        },
+        "customEditors": [
+            {
+                "viewType": "voxelcore.vec3Preview",
+                "displayName": "VoxelCore VEC3 Model Preview",
+                "selector": [
+                    {
+                        "filenamePattern": "*.vec3"
+                    }
+                ],
+                "priority": "default"
+            }
+        ]
+    },
+    "activationEvents": [
+        "onCommand:voxelcore.openPreview",
+        "onWebviewPanel:voxelcore.modelPreview",
+        "onCustomEditor:voxelcore.vec3Preview"
+    ]
+}

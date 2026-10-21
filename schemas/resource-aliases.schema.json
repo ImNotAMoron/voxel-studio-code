@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/MihailRis/VoxelCore/blob/main/vscode-extension/schemas/resource-aliases.schema.json",
+  "title": "VoxelCore resource-aliases.json",
+  "description": "Resource aliases (<pack>/resource-aliases.json): per resource type, an object mapping an alias name to an existing resource (\"base:first-person\": \"core:first-person\").",
+  "markdownDescription": "Resource aliases (`<pack>/resource-aliases.json`): per resource type, an object mapping an alias name to an existing resource (`\"base:first-person\": \"core:first-person\"`).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "camera": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "description": "Target resource name (pack:name)."
+      },
+      "markdownDescription": "Cameras (`camera` resource type), e.g. `first-person`, `cinematic`. Used with the `cameras` library.",
+      "description": "Cameras (camera resource type), e.g. first-person, cinematic. Used with the cameras library."
+    },
+    "post-effect-slot": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "description": "Target resource name (pack:name)."
+      },
+      "markdownDescription": "Post-processing effect slots (`post-effect-slot`, called *post-effect* in resources.md). Used with `gfx.posteffects`.",
+      "description": "Post-processing effect slots (post-effect-slot, called post-effect in resources.md). Used with gfx.posteffects."
+    }
+  }
+}
