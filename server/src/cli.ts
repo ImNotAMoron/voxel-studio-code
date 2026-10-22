@@ -3,7 +3,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { ContentIndex, isInside } from "../../shared/content/index";
-import { collectMentions, createEnv, lintPack } from "./linter";
+import { collectMentions, createEnv, lintPack, lintProjectFiles } from "./linter";
 import { RULES, ruleHref } from "./rules/registry";
 import { VcDiagnostic, offsetToLineCol } from "./rules/report";
 
@@ -12,7 +12,7 @@ interface CliResult {
     output: string;
 }
 
-const USAGE = `usage: vcls lint <packDir...> [--res <resPath>] [--format text|json] [--no-hints]
+const USAGE = `usage: vcls lint <packDir|projectDir...> [--res <resPath>] [--format text|json] [--no-hints]
        vcls rules`;
 
 export function runCli(argv: string[]): CliResult {
@@ -35,18 +35,25 @@ export function runCli(argv: string[]): CliResult {
         else packDirs.push(path.resolve(arg));
     }
     if (!packDirs.length) return { exitCode: 2, output: USAGE + "\n" };
+    // a project folder lints its project files and the packs in its content/
+    const projectDirs = packDirs.filter((d) => fs.existsSync(path.join(d, "project.toml")));
     for (const dir of packDirs) {
-        if (!fs.existsSync(path.join(dir, "package.json"))) {
-            return { exitCode: 2, output: `${dir}: not a content pack (no package.json)\n` };
+        if (!projectDirs.includes(dir) && !fs.existsSync(path.join(dir, "package.json"))) {
+            return { exitCode: 2, output: `${dir}: not a content pack or project (no package.json or project.toml)\n` };
         }
     }
-    const index = new ContentIndex({ resPath, packDirs, roots: [] });
+    const index = new ContentIndex({ resPath, packDirs: packDirs.filter((d) => !projectDirs.includes(d)), roots: projectDirs });
     const env = createEnv(index, { unknownKeys: true }, false);
     const mentions = collectMentions(index);
     const diagnostics: VcDiagnostic[] = [];
     for (const pack of [...index.packs.values(), ...index.shadowed]) {
-        if (!packDirs.some((d) => isInside(pack.root, d) && isInside(d, pack.root))) continue;
+        const listed = packDirs.some((d) => isInside(pack.root, d) && isInside(d, pack.root));
+        const inProject = projectDirs.some((d) => isInside(pack.root, path.join(d, "content")));
+        if (!listed && !inProject) continue;
         for (const list of lintPack(env, pack, undefined, mentions).values()) diagnostics.push(...list);
+    }
+    for (const project of index.lintableProjects()) {
+        for (const list of lintProjectFiles(env, project).values()) diagnostics.push(...list);
     }
     const shown = diagnostics.filter((d) => hints || d.severity !== "hint");
     shown.sort((a, b) => a.file.localeCompare(b.file) || a.start - b.start);

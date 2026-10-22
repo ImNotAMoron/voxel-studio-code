@@ -11,6 +11,8 @@ import { Node, parseTree } from "jsonc-parser";
 import { ContentIndex, PackInfo, UnitDef } from "../../../shared/content/index";
 import { sanitizeJson } from "../../../shared/content/json";
 import { parseVcm, walkVcm } from "../../../shared/vcm/parser";
+import { layoutAttribute } from "../../../shared/layouts";
+import { parseLayoutXml, walkElements } from "../../../shared/layouts/xml";
 import { fileRole, relPath } from "../linter";
 import { fileKey } from "../uri";
 import { RefKind, jsonRefKind, luaCallKind, nodeToValue, resolveRef } from "./refs";
@@ -124,6 +126,23 @@ function vcmRefs(text: string): RefOccurrence[] {
     return out;
 }
 
+/** XML layouts: image textures, modelviewer models, iframe layouts (by the attribute types of shared/layouts). */
+export function layoutRefs(text: string): RefOccurrence[] {
+    const out: RefOccurrence[] = [];
+    for (const { element } of walkElements(parseLayoutXml(text).root)) {
+        for (const a of element.attributes) {
+            const type = layoutAttribute(element.tag, a.name)?.type;
+            if (type !== "texture" && type !== "model" && type !== "layout") continue;
+            // placeholders, escapes / entities (offsets would shift), a whole atlas (`blocks:`)
+            if (!a.valueSpan || !a.value || a.value.includes("%{") || a.value.endsWith(":")) continue;
+            if (text.slice(a.valueSpan.start, a.valueSpan.end) !== a.value) continue;
+            const kind: RefKind = type === "model" ? "model" : type === "layout" ? "layout" : a.value.includes(":") ? "atlasTexture" : "texturePath";
+            out.push({ kind, value: a.value, start: a.valueSpan.start, end: a.valueSpan.end });
+        }
+    }
+    return out;
+}
+
 /** All references written in one file. Depends only on its path and text. */
 export function extractRefs(index: ContentIndex, file: string, text: string): RefOccurrence[] {
     const ext = path.extname(file).toLowerCase();
@@ -134,6 +153,7 @@ export function extractRefs(index: ContentIndex, file: string, text: string): Re
     if (ext === ".lua") return luaRefs(text);
     if (ext === ".toml") return tomlRefs(text);
     if (ext === ".vcm" || ext === ".vca") return vcmRefs(text);
+    if (role === "layout") return layoutRefs(text);
     return [];
 }
 
@@ -217,7 +237,7 @@ export function symbolOfFile(index: ContentIndex, file: string): ContentSymbol |
 
 /** Folders that never contain references. */
 const SKIP_DIRS = new Set(["node_modules", "sounds", "textures", "fonts", "shaders"]);
-const REF_EXTS = new Set([".json", ".toml", ".lua", ".vcm", ".vca"]);
+const REF_EXTS = new Set([".json", ".toml", ".lua", ".vcm", ".vca", ".xml"]);
 /** The engine res/ folder is huge: only these hold references to content. */
 const CORE_DIRS = ["scripts", "modules", "layouts", "models", "preload.json"];
 

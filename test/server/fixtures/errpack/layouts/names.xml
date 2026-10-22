@@ -1,0 +1,15 @@
+<container size="400,300">
+    <image src="gui/nope" size="16,16"/>
+    <image src="blocks:nope" fallback="gui/unloaded" size="16,16"/>
+    <image src="atlasx:thing" size="16,16"/>
+    <modelviewer src="no_such_model" size="64,64"/>
+    <iframe src="errpack:no_layout" size="64,64"/>
+    <iframe src="crate" size="64,64"/>
+    <bindbox binding="movement.forwad"/>
+    <label font="bold">x</label>
+    <select selected="tow">
+        <option value="one">1</option>
+        <option value="two">2</option>
+    </select>
+    <select selected="dynamic"/>
+</container>

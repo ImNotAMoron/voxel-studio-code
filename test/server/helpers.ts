@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import { ContentIndex } from "../../shared/content/index";
-import { createEnv, lintPack, collectMentions } from "../../server/src/linter";
+import { createEnv, lintPack, lintProjectFiles, collectMentions } from "../../server/src/linter";
 import { VcDiagnostic } from "../../server/src/rules/report";
 
 export const EXT_ROOT = path.resolve(__dirname, "..", "..");
@@ -31,4 +31,20 @@ export function rel(file: string): string {
 
 export function describe(d: VcDiagnostic): string {
     return `${path.relative(REPO_ROOT, d.file)} ${d.severity} ${d.code} ${d.message}`;
+}
+
+/** Lints a project folder like the CLI does: its project files and the packs in its content/. */
+export function lintProjectDir(dir: string, packDirs: string[] = []): { index: ContentIndex; diagnostics: VcDiagnostic[] } {
+    const index = new ContentIndex({ resPath: RES, roots: [dir], packDirs });
+    const env = createEnv(index, { unknownKeys: true }, false);
+    const mentions = collectMentions(index);
+    const diagnostics: VcDiagnostic[] = [];
+    for (const pack of index.lintablePacks()) {
+        if (!pack.root.startsWith(path.resolve(dir))) continue;
+        for (const list of lintPack(env, pack, undefined, mentions).values()) diagnostics.push(...list);
+    }
+    for (const project of index.lintableProjects()) {
+        for (const list of lintProjectFiles(env, project).values()) diagnostics.push(...list);
+    }
+    return { index, diagnostics };
 }

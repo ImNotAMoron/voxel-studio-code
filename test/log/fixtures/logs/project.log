@@ -1,0 +1,102 @@
+[D] 2026/10/23 01:19:31.949 [                main] sub-process depth: 0
+[I] 2026/10/23 01:19:31.951+0300 [              engine] engine version: 0.32
+[I] 2026/10/23 01:19:31.951+0300 [        engine-paths] executable path: <engine>\build\Debug\VoxelCore.exe
+[I] 2026/10/23 01:19:31.951+0300 [        engine-paths] resources folder: <engine>\res
+[I] 2026/10/23 01:19:31.951+0300 [        engine-paths] user files folder: <userdir>
+[I] 2026/10/23 01:19:31.952+0300 [        engine-paths] project folder: <project>
+[I] 2026/10/23 01:19:31.953+0300 [             project] permissions: 
+[I] 2026/10/23 01:19:31.953+0300 [             project]  - bogus-perm
+[I] 2026/10/23 01:19:31.953+0300 [              engine] loaded project "probe"
+[I] 2026/10/23 01:19:31.953+0300 [              engine] loading settings
+[I] 2026/10/23 01:19:32.209+0300 [              window] max texture size is 32768
+[I] 2026/10/23 01:19:32.209+0300 [              window] monitor content scale: 1x1
+[I] 2026/10/23 01:19:32.214+0300 [              window] max texture size is 32768
+[I] 2026/10/23 01:19:32.214+0300 [              window] GL Vendor: NVIDIA Corporation
+[I] 2026/10/23 01:19:32.214+0300 [              window] GL Renderer: NVIDIA GeForce RTX 2060 SUPER/PCIe/SSE2
+[I] 2026/10/23 01:19:32.214+0300 [              window] GLFW: 3.5.1 Win32 WGL Null EGL OSMesa VisualC DLL
+[I] 2026/10/23 01:19:32.218+0300 [              engine] loading controls
+[I] 2026/10/23 01:19:32.219+0300 [               audio] initializing ALAudio backend
+[I] 2026/10/23 01:19:32.230+0300 [            al-audio] AL effects extension present
+[I] 2026/10/23 01:19:32.245+0300 [            al-audio] device supports 4 aux sends per source
+[I] 2026/10/23 01:19:32.245+0300 [            al-audio] initialized
+[I] 2026/10/23 01:19:32.245+0300 [            al-audio] max mono sources: 255
+[I] 2026/10/23 01:19:32.245+0300 [            al-audio] output devices:
+[I] 2026/10/23 01:19:32.245+0300 [            al-audio]   OpenAL Soft on Speakers (2- PlayStation Link Adapter)
+[I] 2026/10/23 01:19:32.245+0300 [            al-audio]   OpenAL Soft on Digital Audio (S/PDIF) (2- High Definition Audio Device)
+[I] 2026/10/23 01:19:32.245+0300 [            al-audio]   OpenAL Soft on XG27ACS (NVIDIA High Definition Audio)
+[I] 2026/10/23 01:19:32.246+0300 [            al-audio] input devices:
+[I] 2026/10/23 01:19:32.246+0300 [            al-audio]   OpenAL Soft on Microphone (2- PlayStation Link Adapter)
+[I] 2026/10/23 01:19:32.247+0300 [            al-audio] created 64 effect slots
+[I] 2026/10/23 01:19:32.247+0300 [            al-audio] created 4 effects
+[I] 2026/10/23 01:19:32.248+0300 [            al-audio] successfully loaded effect into effect slot
+[I] 2026/10/23 01:19:32.248+0300 [           lua-state] Lua 5.1
+[I] 2026/10/23 01:19:32.248+0300 [           lua-state] LuaJIT 2.1.1788856981
+[I] 2026/10/23 01:19:32.279+0300 [              locale] locales uk_UA de_DE be_BY en_US pl_PL uz_UZ fi_FI ru_RU added
+[I] 2026/10/23 01:19:32.280+0300 [         app-scripts] starting script: 
+[I] 2026/10/23 01:19:32.280+0300 [           lua-debug] starting application script project:start.lua
+[I] 2026/10/23 01:19:32.281+0300 [         app-scripts] starting project client script: project:project_client.lua
+[I] 2026/10/23 01:19:32.281+0300 [            mainloop] starting menu screen
+[I] 2026/10/23 01:19:32.282+0300 [           lua-debug] cleaning scripts cache
+[I] 2026/10/23 01:19:32.282+0300 [           lua-debug] no non-reset packs
+[I] 2026/10/23 01:19:32.288+0300 [              locale] locales uk_UA de_DE be_BY en_US pl_PL uz_UZ fi_FI ru_RU added
+[I] 2026/10/23 01:19:32.290+0300 [              engine] loading bindings: res:config/bindings.toml
+[I] 2026/10/23 01:19:32.291+0300 [              engine] loading bindings: res:content/base/config/bindings.toml
+[I] 2026/10/23 01:19:32.291+0300 [   assets-management] loading assets
+[D] 2026/10/23 01:19:32.292+0300 [       assets-loader] processing preload "normal" path: "fonts/font"
+[D] 2026/10/23 01:19:32.292+0300 [       assets-loader] processing preload "ssao" path: "shaders/effects/ssao"
+[D] 2026/10/23 01:19:32.292+0300 [       assets-loader] processing preload "deferred_lighting" path: "shaders/effects/deferred_lighting"
+[D] 2026/10/23 01:19:32.293+0300 [       assets-loader] processing preload "" path: "textures/misc/blank"
+[I] 2026/10/23 01:19:32.293+0300 [       assets-loader] loading textures/blocks as blocks
+[I] 2026/10/23 01:19:32.326+0300 [       assets-loader] loading textures/items as items
+[I] 2026/10/23 01:19:32.329+0300 [       assets-loader] loading textures/particles as particles
+[I] 2026/10/23 01:19:32.334+0300 [       assets-loader] loading fonts/font as normal
+[I] 2026/10/23 01:19:32.641+0300 [       assets-loader] loading models/block as block
+[I] 2026/10/23 01:19:32.642+0300 [     assetload-funcs] store model "block" as "block"
+[I] 2026/10/23 01:19:32.642+0300 [       assets-loader] loading shaders/effects/default as default
+[I] 2026/10/23 01:19:32.645+0300 [       assets-loader] loading shaders/effects/ssao as ssao
+[I] 2026/10/23 01:19:32.647+0300 [       assets-loader] loading shaders/effects/deferred_lighting as deferred_lighting
+[I] 2026/10/23 01:19:32.651+0300 [       assets-loader] loading shaders/ui as ui
+[I] 2026/10/23 01:19:32.653+0300 [       assets-loader] loading shaders/ui3d as ui3d
+[I] 2026/10/23 01:19:32.654+0300 [       assets-loader] loading shaders/main as main
+[I] 2026/10/23 01:19:32.659+0300 [       assets-loader] loading shaders/lines as lines
+[I] 2026/10/23 01:19:32.661+0300 [       assets-loader] loading shaders/entity as entity
+[I] 2026/10/23 01:19:32.663+0300 [       assets-loader] loading shaders/translucent as translucent
+[I] 2026/10/23 01:19:32.665+0300 [       assets-loader] loading shaders/background as background
+[I] 2026/10/23 01:19:32.667+0300 [       assets-loader] loading shaders/skybox_gen as skybox_gen
+[I] 2026/10/23 01:19:32.669+0300 [       assets-loader] loading shaders/shadows as shadows
+[I] 2026/10/23 01:19:32.671+0300 [       assets-loader] loading shaders/clouds as clouds
+[I] 2026/10/23 01:19:32.672+0300 [       assets-loader] loading textures/gui/menubg as gui/menubg
+[I] 2026/10/23 01:19:32.673+0300 [       assets-loader] loading textures/gui/delete_icon as gui/delete_icon
+[I] 2026/10/23 01:19:32.674+0300 [       assets-loader] loading textures/gui/no_icon as gui/no_icon
+[I] 2026/10/23 01:19:32.676+0300 [       assets-loader] loading textures/gui/no_world_icon as gui/no_world_icon
+[I] 2026/10/23 01:19:32.676+0300 [       assets-loader] loading textures/gui/warning as gui/warning
+[I] 2026/10/23 01:19:32.677+0300 [       assets-loader] loading textures/gui/error as gui/error
+[I] 2026/10/23 01:19:32.678+0300 [       assets-loader] loading textures/gui/cross as gui/cross
+[I] 2026/10/23 01:19:32.679+0300 [       assets-loader] loading textures/gui/refresh as gui/refresh
+[I] 2026/10/23 01:19:32.680+0300 [       assets-loader] loading textures/gui/folder_icon as gui/folder_icon
+[I] 2026/10/23 01:19:32.681+0300 [       assets-loader] loading textures/gui/settings_icon as gui/settings_icon
+[I] 2026/10/23 01:19:32.682+0300 [       assets-loader] loading textures/misc/rain as misc/rain
+[I] 2026/10/23 01:19:32.692+0300 [       assets-loader] loading textures/misc/snow as misc/snow
+[I] 2026/10/23 01:19:32.694+0300 [       assets-loader] loading textures/gui/check_mark as gui/check_mark
+[I] 2026/10/23 01:19:32.695+0300 [       assets-loader] loading textures/gui/left_arrow as gui/left_arrow
+[I] 2026/10/23 01:19:32.696+0300 [       assets-loader] loading textures/gui/right_arrow as gui/right_arrow
+[I] 2026/10/23 01:19:32.696+0300 [       assets-loader] loading textures/gui/lock as gui/lock
+[I] 2026/10/23 01:19:32.697+0300 [       assets-loader] loading textures/gui/save as gui/save
+[I] 2026/10/23 01:19:32.698+0300 [       assets-loader] loading textures/gui/block as gui/block
+[I] 2026/10/23 01:19:32.699+0300 [       assets-loader] loading textures/gui/item as gui/item
+[I] 2026/10/23 01:19:32.700+0300 [       assets-loader] loading textures/gui/file as gui/file
+[I] 2026/10/23 01:19:32.701+0300 [       assets-loader] loading textures/gui/module as gui/module
+[I] 2026/10/23 01:19:32.702+0300 [       assets-loader] loading textures/gui/play as gui/play
+[I] 2026/10/23 01:19:32.702+0300 [       assets-loader] loading textures/gui/info as gui/info
+[I] 2026/10/23 01:19:32.703+0300 [       assets-loader] loading textures/gui/world as gui/world
+[I] 2026/10/23 01:19:32.704+0300 [       assets-loader] loading textures/gui/hud as gui/hud
+[I] 2026/10/23 01:19:32.705+0300 [       assets-loader] loading textures/gui/entity as gui/entity
+[I] 2026/10/23 01:19:32.706+0300 [       assets-loader] loading textures/gui/half_block as gui/half_block
+[I] 2026/10/23 01:19:32.707+0300 [       assets-loader] loading textures/misc/blank as 
+[E] 2026/10/23 01:19:32.708+0300 [                 lua] [string "project_client.lua"]:3: attempt to index local 'x' (a nil value)
+stack traceback:
+	[string "project_client.lua"]:3: in function <[string "project_client.lua"]:1>
+[I] 2026/10/23 01:19:32.708+0300 [            mainloop] main loop started
+[E] 2026/10/23 01:19:32.867+0300 [           lua-debug] [string "core:modules/internal/debugging.lua"]:149: [string "project:start.lua"]:3: attempt to index local 't' (a nil value):
+	[string "core:scripts/stdlib.lua"]:146: in function "__index"
+	[string "project:start.lua"]:3: in main chunk

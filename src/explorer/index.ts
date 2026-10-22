@@ -9,14 +9,18 @@ import { findExecutable, findResPath } from "../packs";
 import { resolveUserDir } from "../run";
 import { workspaceIndex } from "../workspaceIndex";
 import { engineChannels } from "../debug/channels";
+import { registerPackDecorations } from "./decorations";
 import {
     Locales,
     explorerPacks,
+    explorerProjects,
     packCategories,
     packDependencies,
     type ContentCategory,
     type ContentEntry,
     type EntryKind,
+    type ExplorerProject,
+    type ProjectRow,
 } from "./model";
 
 const KIND_ICONS: Record<EntryKind, string> = {
@@ -35,11 +39,20 @@ const KIND_ICONS: Record<EntryKind, string> = {
     material: "symbol-color",
 };
 
+const PROJECT_ROW_ICONS: Record<ProjectRow["status"], [string, string?]> = {
+    ok: ["check", "testing.iconPassed"],
+    missing: ["circle-slash", "disabledForeground"],
+    unknown: ["warning", "problemsWarningIcon.foreground"],
+};
+
 /** Kinds the model preview can open. */
 const PREVIEWABLE = new Set<EntryKind>(["block", "entity", "skeleton"]);
 const PREVIEW_MODEL = /\.(vcm|obj|vec3)$/i;
 
 type ContentNode =
+    | { type: "project"; project: ExplorerProject }
+    | { type: "projectGroup"; key: string; label: string; icon: string; rows: ProjectRow[] }
+    | { type: "projectRow"; group: string; row: ProjectRow }
     | { type: "pack"; pack: PackInfo }
     | { type: "builtin"; packs: PackInfo[] }
     | { type: "category"; pack: string; category: ContentCategory }
@@ -65,11 +78,28 @@ class ContentProvider implements vscode.TreeDataProvider<ContentNode> {
         const index = workspaceIndex.get();
         if (!node) {
             const { workspace, builtin } = explorerPacks(index);
-            const nodes: ContentNode[] = workspace.map((pack) => ({ type: "pack", pack }));
+            const projects = explorerProjects(index);
+            const nodes: ContentNode[] = projects.map((project) => ({ type: "project", project }));
+            // a project's content packs are listed under it
+            for (const pack of workspace) if (!index.projectOfPack(pack)) nodes.push({ type: "pack", pack });
             if (builtin.length) nodes.push({ type: "builtin", packs: builtin });
-            return workspace.length ? nodes : [];
+            return workspace.length || projects.length ? nodes : [];
         }
         switch (node.type) {
+            case "project": {
+                const { project, files, permissions, basePacks, packs } = node.project;
+                const root = project.root;
+                return [
+                    ...files.map((row): ContentNode => ({ type: "projectRow", group: root, row })),
+                    { type: "projectGroup", key: `${root}:perm`, label: "Permissions", icon: "shield", rows: permissions },
+                    { type: "projectGroup", key: `${root}:base`, label: "Base packs", icon: "package", rows: basePacks },
+                    ...packs.map((pack): ContentNode => ({ type: "pack", pack })),
+                ];
+            }
+            case "projectGroup":
+                return node.rows.map((row) => ({ type: "projectRow", group: node.key, row }));
+            case "projectRow":
+                return [];
             case "builtin":
                 return node.packs.map((pack) => ({ type: "pack", pack }));
             case "pack":
@@ -89,6 +119,41 @@ class ContentProvider implements vscode.TreeDataProvider<ContentNode> {
     getTreeItem(node: ContentNode): vscode.TreeItem {
         const C = vscode.TreeItemCollapsibleState;
         switch (node.type) {
+            case "project": {
+                const p = node.project.project;
+                const name = p.title ?? p.name ?? path.basename(p.root);
+                const item = new vscode.TreeItem(name, C.Expanded);
+                item.id = `project:${p.root}`;
+                item.description = p.builtin ? "engine default project" : "project";
+                item.tooltip = new vscode.MarkdownString(`**${name}** project${p.name ? ` \`${p.name}\`` : ""}\n\n${p.root}`);
+                item.iconPath = new vscode.ThemeIcon("rocket");
+                item.resourceUri = vscode.Uri.file(p.root);
+                item.contextValue = "voxelcore.project";
+                item.command = { command: "vscode.open", title: "Open project.toml", arguments: [vscode.Uri.file(p.file)] };
+                return item;
+            }
+            case "projectGroup": {
+                const item = new vscode.TreeItem(node.label, node.rows.length ? C.Collapsed : C.None);
+                item.id = node.key;
+                item.iconPath = new vscode.ThemeIcon(node.icon);
+                item.description = node.rows.length ? node.rows.map((r) => r.label).join(", ") : "none";
+                return item;
+            }
+            case "projectRow": {
+                const { row } = node;
+                const item = new vscode.TreeItem(row.label, C.None);
+                item.id = `${node.group}:${row.label}`;
+                item.description = row.description;
+                item.tooltip = new vscode.MarkdownString(row.tooltip);
+                const [icon, color] = PROJECT_ROW_ICONS[row.status];
+                // existing files get the file icon of the icon theme
+                item.iconPath = row.file && row.status === "ok" ? vscode.ThemeIcon.File : new vscode.ThemeIcon(icon, color ? new vscode.ThemeColor(color) : undefined);
+                if (row.file) {
+                    item.resourceUri = vscode.Uri.file(row.file);
+                    item.command = { command: "vscode.open", title: "Open", arguments: [vscode.Uri.file(row.file)] };
+                }
+                return item;
+            }
             case "builtin": {
                 const item = new vscode.TreeItem("Built-in packs", C.Collapsed);
                 item.iconPath = new vscode.ThemeIcon("library");
@@ -306,6 +371,7 @@ function entryOf(arg: unknown): ContentEntry | undefined {
 }
 
 export function registerExplorer(context: vscode.ExtensionContext, log: EngineLog) {
+    registerPackDecorations(context);
     const content = new ContentProvider();
     const dependencies = new DependenciesProvider();
     const engine = new EngineProvider(log);
@@ -351,14 +417,24 @@ export function registerExplorer(context: vscode.ExtensionContext, log: EngineLo
         }),
         // internal, used by the smoke test
         vscode.commands.registerCommand("voxelcore.explorer.inspect", async () => {
-            const packs = content.getChildren();
+            const top = content.getChildren();
             const result: Record<string, Record<string, number>> = {};
+            const projects: Record<string, string[]> = {};
+            // a project's content packs are its children
+            const packs = top.flatMap((node) => {
+                if (node.type !== "project") return [node];
+                const children = content.getChildren(node);
+                projects[node.project.project.name ?? node.project.project.root] = children.map((c) =>
+                    c.type === "projectRow" ? c.row.label : c.type === "projectGroup" ? `${c.label}: ${c.rows.map((r) => r.label).join(",")}` : c.type === "pack" ? `pack ${c.pack.id}` : c.type
+                );
+                return children;
+            });
             for (const node of packs) {
                 if (node.type !== "pack") continue;
                 const cats = content.getChildren(node);
                 result[node.pack.id] = Object.fromEntries(cats.map((c) => (c.type === "category" ? [c.category.key, c.category.entries.length] : ["?", 0])));
             }
-            return { packs: result, dependencies: dependencies.getChildren().length, engine: engine.getChildren().map((r) => `${r.label}: ${r.value}`) };
+            return { packs: result, projects, dependencies: dependencies.getChildren().length, engine: engine.getChildren().map((r) => `${r.label}: ${r.value}`) };
         })
     );
 }

@@ -6,6 +6,7 @@ import * as path from "node:path";
 import { parseTree, findNodeAtLocation, type Node } from "jsonc-parser";
 import type { ContentIndex, UnitDef } from "../content";
 import type { ProblemTarget, UnitKindName } from "./problems";
+import { CLIENT_SCRIPT } from "../content/project";
 
 /** 0-based range in a file. */
 export interface FileLocation {
@@ -19,6 +20,8 @@ export interface ResolveOptions {
     userDir?: string;
     /** The `--script` app script (`script:<name>`). */
     script?: string;
+    /** The `--project` folder (`project:<path>`; project_client.lua's chunk is its bare name). */
+    project?: string;
     /** Live editor text by absolute path. */
     text?: (file: string) => string | undefined;
 }
@@ -64,11 +67,21 @@ export class LogResolver {
         const key = (p: string) => (process.platform === "win32" ? path.resolve(p).toLowerCase() : path.resolve(p));
         if (this.options.script && key(this.options.script) === key(file)) return `script:${path.basename(file)}`;
         const pack = this.index.packForFile(file);
+        const project = this.options.project;
+        if (project && (!pack || pack.id === "core") && key(file).startsWith(key(project) + path.sep)) {
+            const rel = path.relative(project, file).split(path.sep).join("/");
+            // scripting::load_client_project_script names the chunk by the file name only
+            return rel === CLIENT_SCRIPT ? CLIENT_SCRIPT : `project:${rel}`;
+        }
         if (!pack) return undefined;
         return `${pack.id}:${path.relative(pack.root, file).split(path.sep).join("/")}`;
     }
 
     resolveVirtual(vpath: string): string | undefined {
+        if (vpath === CLIENT_SCRIPT && this.options.project) {
+            const file = path.join(this.options.project, CLIENT_SCRIPT);
+            return fs.existsSync(file) ? file : undefined;
+        }
         const m = /^([\w-]+):(.*)$/.exec(vpath.replace(/\\/g, "/"));
         if (!m) return undefined;
         const [, ep, rel] = m;
@@ -83,6 +96,8 @@ export class LogResolver {
             if (this.index.resPath) candidates.push(path.join(this.index.resPath, rel));
         } else if (ep === "user") {
             if (this.options.userDir) candidates.push(path.join(this.options.userDir, rel));
+        } else if (ep === "project") {
+            if (this.options.project) candidates.push(path.join(this.options.project, rel));
         } else if (ep === "script") {
             if (this.options.script && path.basename(this.options.script) === rel) candidates.push(this.options.script);
         } else {

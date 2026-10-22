@@ -29,6 +29,8 @@ export interface LaunchArguments {
     recreate?: boolean;
     script?: string;
     args?: string[];
+    project?: string;
+    projectArgs?: string[];
     port?: number;
     host?: string;
     /** quickWorld: the app script waits for the debugger before opening the world. */

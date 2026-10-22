@@ -4,7 +4,9 @@
 import { idToCaption } from "../../shared/content/locale";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { ContentIndex, PackData, PackInfo, UnitDef } from "../../shared/content";
+import type { ContentIndex, PackData, PackInfo, ProjectInfo, UnitDef } from "../../shared/content";
+import { CLIENT_SCRIPT, PERMISSIONS, PROJECT_FILE, START_SCRIPT } from "../../shared/content/project";
+import { isInside } from "../../shared/content/index";
 import { assemblePacks, dependencyStatus, type AssemblePack, type DependencyStatus } from "../../shared/content/assemble";
 
 export type EntryKind =
@@ -180,6 +182,81 @@ export function explorerPacks(index: ContentIndex): { workspace: PackInfo[]; bui
     const workspace = all.filter((p) => workspaceIds.has(p.id)).sort((a, b) => a.id.localeCompare(b.id));
     const builtin = all.filter((p) => !workspaceIds.has(p.id)).sort((a, b) => (a.id === "core" ? -1 : b.id === "core" ? 1 : a.id.localeCompare(b.id)));
     return { workspace, builtin };
+}
+
+export interface ProjectRow {
+    label: string;
+    description: string;
+    /** "ok" | "missing" (base pack not found, script absent) | "unknown" (permission). */
+    status: "ok" | "missing" | "unknown";
+    file?: string;
+    tooltip: string;
+}
+
+export interface ExplorerProject {
+    project: ProjectInfo;
+    files: ProjectRow[];
+    permissions: ProjectRow[];
+    basePacks: ProjectRow[];
+    /** Packs in `<project>/content`. */
+    packs: PackInfo[];
+}
+
+/** Workspace projects with their files, permissions, base packs and content packs. */
+export function explorerProjects(index: ContentIndex): ExplorerProject[] {
+    const resContent = index.resPath ? path.join(index.resPath, "content") : undefined;
+    return index.lintableProjects().sort((a, b) => a.root.localeCompare(b.root)).map((project) => {
+        const files: ProjectRow[] = [
+            { label: PROJECT_FILE, description: project.title ?? project.name ?? "", status: "ok", file: project.file, tooltip: "Project definition (Project::deserialize)" },
+            {
+                label: START_SCRIPT, description: project.startScript ? "app script" : "not created", status: project.startScript ? "ok" : "missing",
+                file: project.startScript, tooltip: "Runs at start-up as a coroutine with `app` (replaced by --script)",
+            },
+            {
+                label: CLIENT_SCRIPT, description: project.clientScript ? "client script" : "not created", status: project.clientScript ? "ok" : "missing",
+                file: project.clientScript, tooltip: "Loaded on clients; `on_menu_setup`, `on_level_setup`, … run when screens change",
+            },
+        ];
+        const permissions: ProjectRow[] = project.permissions.map((name) => {
+            const info = PERMISSIONS.find((p) => p.name === name);
+            return {
+                label: name, description: info ? "" : "unknown (ignored)", status: info ? "ok" : "unknown",
+                tooltip: info ? `Allows ${info.doc}` : "Not a permission the engine checks",
+            };
+        });
+        const basePacks: ProjectRow[] = project.basePacks.map((id) => {
+            const copies = [...index.packs.values(), ...index.shadowed].filter((p) => p.id === id);
+            const source = copies.find((p) => isInside(p.root, project.contentDir))
+                ?? copies.find((p) => resContent && isInside(p.root, resContent));
+            if (source) {
+                const where = isInside(source.root, project.contentDir) ? "project content" : "res/content";
+                return { label: id, description: where, status: "ok", file: source.packageFile, tooltip: source.root };
+            }
+            return {
+                label: id, description: copies.length ? "outside the content sources" : "not found", status: "missing",
+                file: copies[0]?.packageFile, tooltip: "The engine stops at start-up ('pack not found') unless the user content folder has it",
+            };
+        });
+        const packs = [...index.packs.values()].filter((p) => index.projectOfPack(p) === project).sort((a, b) => a.id.localeCompare(b.id));
+        return { project, files, permissions, basePacks, packs };
+    });
+}
+
+/** Path key for comparing folders (Windows paths are case-insensitive). */
+export function folderKey(fsPath: string, platform = process.platform): string {
+    const resolved = path.resolve(fsPath).replace(/[\\/]+$/, "");
+    return platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
+/** Pack root folders inside the workspace folders, for the Explorer decorations. */
+export function packRootFolders(index: ContentIndex, workspaceRoots: string[]): Map<string, PackInfo> {
+    const roots = workspaceRoots.map((r) => folderKey(r));
+    const result = new Map<string, PackInfo>();
+    for (const pack of index.packs.values()) {
+        const key = folderKey(pack.root);
+        if (roots.some((r) => key === r || key.startsWith(r + path.sep))) result.set(key, pack);
+    }
+    return result;
 }
 
 // ---- dependencies ----

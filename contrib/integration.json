@@ -56,9 +56,18 @@
       {
         "language": "vca",
         "path": "./snippets/vca.json"
+      },
+      {
+        "language": "xml",
+        "path": "./snippets/xml.json"
       }
     ],
     "commands": [
+      {
+        "command": "voxelcore.newProject",
+        "title": "New Project…",
+        "category": "VoxelCore"
+      },
       {
         "command": "voxelcore.newPack",
         "title": "New Content Pack…",
@@ -85,6 +94,11 @@
         "category": "VoxelCore"
       },
       {
+        "command": "voxelcore.newLayout",
+        "title": "New Layout…",
+        "category": "VoxelCore"
+      },
+      {
         "command": "voxelcore.run",
         "title": "Run Engine",
         "category": "VoxelCore",
@@ -95,6 +109,12 @@
         "title": "Run Quick World",
         "category": "VoxelCore",
         "icon": "$(play-circle)"
+      },
+      {
+        "command": "voxelcore.runProject",
+        "title": "Run Project",
+        "category": "VoxelCore",
+        "icon": "$(rocket)"
       },
       {
         "command": "voxelcore.runHeadlessScript",
@@ -133,6 +153,10 @@
       ],
       "voxelcore.new": [
         {
+          "command": "voxelcore.newProject",
+          "group": "0_project"
+        },
+        {
           "command": "voxelcore.newPack",
           "group": "1_pack"
         },
@@ -155,6 +179,11 @@
           "command": "voxelcore.newComponent",
           "group": "2_unit@4",
           "when": "voxelcore.hasPacks"
+        },
+        {
+          "command": "voxelcore.newLayout",
+          "group": "2_unit@5",
+          "when": "voxelcore.hasPacks"
         }
       ],
       "commandPalette": [
@@ -172,6 +201,10 @@
         },
         {
           "command": "voxelcore.newComponent",
+          "when": "voxelcore.hasPacks"
+        },
+        {
+          "command": "voxelcore.newLayout",
           "when": "voxelcore.hasPacks"
         },
         {
@@ -236,6 +269,17 @@
               "type": "string"
             },
             "description": "Extra engine arguments"
+          },
+          "project": {
+            "type": "string",
+            "description": "Project folder (with a project.toml), passed as --project. Without it the engine uses <userDir>/project, then res/project. 'run' starts the project's start.lua; 'quickWorld' and 'headless' replace it with their script"
+          },
+          "projectArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Project arguments: --key value pairs (a --flag alone is \"\"), passed after a bare --; scripts read them with vc.get_project_arg(\"key\")"
           }
         }
       }
@@ -265,6 +309,7 @@
     }
   },
   "activationEvents": [
+    "workspaceContains:**/project.toml",
     "onLanguage:vcm",
     "onLanguage:vca",
     "onCommand:voxelcore.newPack"

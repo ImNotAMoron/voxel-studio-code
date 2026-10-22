@@ -6,6 +6,7 @@
 !languages/**
 !snippets/**
 !media/**
+!icons/**
 !templates/**
 !package.json
 !README.md

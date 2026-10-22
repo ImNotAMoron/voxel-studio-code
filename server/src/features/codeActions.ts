@@ -7,7 +7,7 @@ import {
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { PNG } from "pngjs";
-import { closest } from "../../../shared/content/index";
+import { closest, grantPermissionEdit } from "../../../shared/content/index";
 import { fileRole } from "../linter";
 import { LintEnv } from "../rules/context";
 import { callbacksFor, ScriptKind } from "../lua/spec";
@@ -90,16 +90,38 @@ export function codeActions(env: LintEnv, doc: TextDocument, file: string, diagn
         }
         if (diag.source !== "voxelcore") continue;
         const code = typeof diag.code === "string" ? diag.code : "";
-        if ((code === "VC0010" || code === "VC0101") && typeof data.suggestion === "string") {
+        if (["VC0010", "VC0101", "VC0401", "VC0402", "VC0406", "VC0407", "VC0410", "VC0414", "VC0415", "VC0416", "VC0500", "VC0504"].includes(code) && typeof data.suggestion === "string") {
             const original = doc.getText(diag.range);
             const replacement = original.startsWith('"') ? `"${data.suggestion}"` : data.suggestion;
+            const edits = [TextEdit.replace(diag.range, replacement)];
+            // a layout element's close tag is renamed with it
+            const closeTag = data.closeTag as { start: number; end: number } | undefined;
+            if (closeTag) edits.push(TextEdit.replace({ start: doc.positionAt(closeTag.start), end: doc.positionAt(closeTag.end) }, data.suggestion));
             actions.push({
                 title: `Rename to '${data.suggestion}'`,
                 kind: CodeActionKind.QuickFix,
                 diagnostics: [diag],
                 isPreferred: true,
-                edit: { changes: { [doc.uri]: [TextEdit.replace(diag.range, replacement)] } },
+                edit: { changes: { [doc.uri]: edits } },
             });
+        }
+        if (code === "VC0503" && typeof data.permission === "string" && typeof data.projectFile === "string") {
+            let tomlText: string | undefined;
+            try {
+                tomlText = fs.readFileSync(data.projectFile, "utf8");
+            } catch {
+                // project.toml gone
+            }
+            if (tomlText !== undefined) {
+                const [start, end, newText] = grantPermissionEdit(tomlText, data.permission);
+                const toml = TextDocument.create(fileToUri(data.projectFile), "toml", 0, tomlText);
+                actions.push({
+                    title: `Grant '${data.permission}' in project.toml`,
+                    kind: CodeActionKind.QuickFix,
+                    diagnostics: [diag],
+                    edit: { changes: { [toml.uri]: [TextEdit.replace({ start: toml.positionAt(start), end: toml.positionAt(end) }, newText)] } },
+                });
+            }
         }
         if (code === "VC0011" && typeof data.prop === "string") {
             const target = env.index.packs.get(String(data.declarePack ?? pack?.id ?? ""));

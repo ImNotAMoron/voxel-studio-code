@@ -153,3 +153,38 @@ test("links in log lines", () => {
     ]);
     assert.deepEqual(findLogLinks("https://example.com/a.json"), []);
 });
+
+test("project chunks: project:<path> and the bare project_client.lua", () => {
+    const project = path.join(__dirname, "..", "server", "fixtures", "errproject");
+    const pindex = new ContentIndex({ resPath: RES, roots: [project] });
+    const r = new LogResolver(pindex, { project });
+    assert.equal(r.resolveVirtual("project:start.lua"), path.join(project, "start.lua"));
+    assert.equal(r.resolveVirtual("project:modules/helper.lua"), path.join(project, "modules", "helper.lua"));
+    assert.equal(r.resolveVirtual("project_client.lua"), path.join(project, "project_client.lua"));
+    assert.equal(r.virtualPath(path.join(project, "start.lua")), "project:start.lua");
+    assert.equal(r.virtualPath(path.join(project, "modules", "helper.lua")), "project:modules/helper.lua");
+    assert.equal(r.virtualPath(path.join(project, "project_client.lua")), "project_client.lua");
+    // packs in the project's content/ keep their pack chunk names
+    assert.equal(r.virtualPath(path.join(project, "content", "projpack", "scripts", "world.lua")), "projpack:scripts/world.lua");
+    // without a --project run, project: chunks don't resolve
+    assert.equal(new LogResolver(pindex, {}).resolveVirtual("project:start.lua"), undefined);
+});
+
+test("project script errors map to the project's files (real client log)", () => {
+    // fixtures/logs/project.log: a windowed run with --project, an error in
+    // project_client.lua on_menu_setup (line 3) and in start.lua (line 3)
+    const project = path.join(__dirname, "..", "server", "fixtures", "errproject");
+    const r = new LogResolver(new ContentIndex({ resPath: RES, roots: [project] }), { project });
+    const ctx = new LogContext();
+    const located: string[] = [];
+    for (const entry of parseLog(fs.readFileSync(path.join(FIXTURES, "logs", "project.log"), "utf8"))) {
+        ctx.observe(entry);
+        const p = problemOf(entry, ctx);
+        const loc = p?.target && r.resolve(p.target);
+        if (loc) located.push(`${path.relative(project, loc.file).split(path.sep).join("/")}:${loc.start.line + 1} ${p!.message}`);
+    }
+    assert.deepEqual(located, [
+        "project_client.lua:3 attempt to index local 'x' (a nil value)",
+        "start.lua:3 attempt to index local 't' (a nil value)",
+    ]);
+});

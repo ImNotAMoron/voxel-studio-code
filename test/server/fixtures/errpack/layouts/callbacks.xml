@@ -1,0 +1,7 @@
+<panel size="200,100" position-func="-1, 40">
+    <button onclick="refresh">@Refresh</button>
+    <button onclick="refresh()" onrightclick='menu.page="main"'>@Ok</button>
+    <checkbox consumer="function(v) save_setting(v) end">@Save</checkbox>
+    <label supplier="'count: ' .. "/>
+    <textbox validator="function(s) return #s > 0 end" onup="local x = 1 x = x + 1"/>
+</panel>

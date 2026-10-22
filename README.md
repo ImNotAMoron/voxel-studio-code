@@ -33,7 +33,7 @@ live 3D model preview, and one-click runs in the engine.
   rotation profiles and state-based variants; on an entity or skeleton it
   shows the skeleton in rest pose with hitbox, sensors and components.
   `parent` definitions are resolved, and edits show up while you type.
-- **Scaffolding**: *New Content Pack / Block / Item / Entity / Component*
+- **Scaffolding**: *New Content Pack / Block / Item / Entity / Component / Layout*
   (Command Palette, or right-click a folder → *New VoxelCore*) creates all
   related files: definition, placeholder texture, script, caption.
 - **Snippets**: `vc-block`, `vc-item`, `vc-entity`, `vc-particles`,
@@ -67,6 +67,42 @@ live 3D model preview, and one-click runs in the engine.
 
   A quick fix adds the missing keys. Hovering a `caption`, a `gui.str(...)`
   key or a locale key shows every translation.
+- **XML layouts**: `layouts/**/*.xml` get completion of elements (only
+  the ones the parent element reads), attributes (with value choices) and
+  values, hover docs for every element and attribute (type, default,
+  how Lua callbacks are run), an outline, and checks generated from the
+  engine's UI reader: parse errors as the engine reports them, unsupported
+  elements, attributes the element doesn't read (the engine ignores them
+  silently, so `orientaton=` is otherwise invisible), ignored children
+  and text, repeated attributes, and values the engine can't read
+  (the layout fails to load) or reads differently than written: `size="100
+  50"` is `100,100`, `visible="yes"` is false, `z-index="1.5"` is 1, a
+  bad hex digit gives a wrong colour. Duplicate element ids, which hide
+  `document.<id>` for everything inside the duplicate, are flagged too.
+  Quick fixes rename misspellings and fix enum and boolean values.
+  Colour attributes get a swatch and VS Code's colour picker; the picked
+  colour is written back as hex or `r,g,b,a`, like the original. Lua in
+  callback attributes (`onclick`, `consumer`, `supplier`, …) is
+  highlighted as Lua. Callbacks are checked like the engine compiles them
+  (`onclick="refresh"` without `()` is a syntax error the engine only
+  logs), names the layout's `.xml.lua`, the engine and the pack don't
+  define are flagged, and F12 on `refresh()` jumps to `function refresh`.
+  Texture, model and layout names in layouts are checked, completed, shown
+  on hover (with the image) and in the gutter, and take part in Find
+  References and Rename; unknown key bindings are flagged. Hovering an
+  `@key` text shows its translations, following the `context` attribute.
+  In the layout's `.xml.lua`, `document.` completes the layout's element
+  ids (the ones the engine actually indexes), with hover and F12 to the
+  element. Inside `onclick` and the other callbacks, completion offers the
+  script's functions (`refresh()` in event attributes, a
+  `function(checked) … end` stub where the engine passes values).
+  Snippets: `vc-layout`, `vc-inventory`, `vc-panel`, `vc-button`,
+  `vc-label`, `vc-image`, `vc-textbox`, `vc-checkbox`, `vc-trackbar`,
+  `vc-select`, `vc-slots-grid`, `vc-slot`. *New Layout…* creates a layout
+  and its script. Find All References and Rename work across a layout and
+  its script: a function and the callbacks that call it, an element id and
+  its `document.<id>` uses. A `select` whose `selected` matches no option
+  and fonts that aren't loaded (the text isn't drawn) are flagged.
 - **Lua debugger**: F5 (*VoxelCore: Debug Quick World*) opens the dev
   world under the debugger. You get breakpoints in pack scripts and
   modules, the call stack, locals (expand tables at a breakpoint), hover
@@ -104,6 +140,25 @@ live 3D model preview, and one-click runs in the engine.
   pack's dependencies with their status and the engine's load order.
   *Engine* shows the executable, `res/`, user dir and run status, with
   run buttons.
+- **Projects**: a folder with a `project.toml` (the app the engine runs
+  with `--project`) is recognised. Unknown permissions, base packs the
+  engine won't find, and calls that need a permission the project doesn't
+  grant (`network.*`, writing to `user:`, `app.start_debug_instance`,
+  `app.start_background_instance`) are flagged, with quick fixes that
+  grant the permission. `project_client.lua` gets completion for its
+  `on_menu_setup` / `on_level_setup` / … callbacks, and a bare `require`
+  there is flagged (it fails; use `require "project:name"`). The content
+  explorer shows each project with its files, permissions, base packs and
+  content packs. *New Project…* creates one, and *Run Project* runs it with
+  its own `start.lua`. `voxelcore` tasks and debug launches take
+  `project` and `projectArgs`. Quick World and debug runs replace
+  `start.lua` with their own script.
+- **Pack folders in the Explorer**: pack folders get a `VC` badge and a
+  colour in VS Code's Explorer (`voxelcore.explorer.packBadges`). For
+  icons on `blocks`, `items`, `textures`, `scripts`, `texts` and the other
+  pack folders, and on VCM, VCA, Lua, locale and asset files, pick
+  *VoxelCore Content Packs* in *Preferences: File Icon Theme*. It replaces
+  your current icon theme, so files of other languages get a plain icon.
 
 ## Setup
 
@@ -127,6 +182,7 @@ live 3D model preview, and one-click runs in the engine.
 | `voxelcore.configureLua` | `ask` | configure the Lua extension for content packs |
 | `voxelcore.lint.enable` | `true` | enable the pack linter |
 | `voxelcore.log.tail` | `true` | follow `<userDir>/latest.log` of engines started outside VS Code |
+| `voxelcore.explorer.packBadges` | `true` | `VC` badge and colour on pack folders in the Explorer |
 | `voxelcore.gutterThumbnails` | `true` | texture thumbnails in the gutter of definitions and models |
 | `voxelcore.hotReload.enable` | `true` | runs start with `--dbg-server`, and saved files reload in the engine |
 | `voxelcore.hotReload.content` | `ask` | reload content when a definition or script is saved: `ask`, `auto`, `off` |
@@ -137,6 +193,7 @@ live 3D model preview, and one-click runs in the engine.
 npm install
 npm run gen        # regenerate schemas/ and meta/ from the engine repo (..)
 npm run contrib    # merge contrib/*.json into package.json
+npm run icons      # regenerate the file icon theme (icons/)
 npm run build      # bundle to dist/
 npm test           # unit + engine integration tests (uses ../build/Debug/VoxelCore if present)
 npm run test:vscode  # smoke test inside the installed VS Code (extension host)

@@ -3,9 +3,9 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { closest } from "../../../shared/content/index";
+import { closest, requiredPermission } from "../../../shared/content/index";
 import {
-    LuaNode, assignedGlobals, globalCalls, identifierUses, parseLua, scriptRole, stringCalls,
+    LuaNode, assignedGlobals, globalCalls, identifierUses, namedCalls, parseLua, scriptRole, stringCalls,
     topLevelGlobalFunctions,
 } from "../lua/analyze";
 import {
@@ -103,10 +103,45 @@ export function lintLua(ctx: FileContext) {
         }
     }
 
+    // project scripts and the packs a project ships (<project>/content)
+    const projectFile = index.projectFile(ctx.file);
+    const project = projectFile?.project ?? (pack.id ? index.projectOfPack(pack) : undefined);
+    if (project && !project.builtin) {
+        const granted = new Set(project.permissions);
+        const shadowed = assignedGlobals(chunk);
+        for (const call of namedCalls(chunk)) {
+            const perm = requiredPermission(call.callee, call.firstString);
+            if (!perm || granted.has(perm) || shadowed.has(call.callee.split(".")[0])) continue;
+            report.add("VC0503", call.start, call.end,
+                `'${call.callee}' needs the project permission '${perm}', which ${path.basename(project.root)}/project.toml doesn't grant: the call throws`,
+                { data: { permission: perm, projectFile: project.file } });
+        }
+    }
+
     // require
     for (const call of stringCalls(chunk)) {
         if (call.callee !== "require") continue;
         const spec = call.value;
+        if (projectFile) {
+            // bare names resolve through the caller's chunk name: `project:start.lua`
+            // works, project_client.lua is loaded as plain `project_client.lua` (scripting.cpp)
+            const colon = spec.indexOf(":");
+            if (colon < 0 && projectFile.kind === "client") {
+                report.add("VC0504", call.start, call.end,
+                    `require '${spec}' fails in project_client.lua ("invalid path syntax (':' missing)"): its chunk name has no entry point; use 'project:${spec}'`,
+                    { data: { suggestion: `project:${spec}` } });
+                continue;
+            }
+            if (colon < 0 || spec.slice(0, colon) === "project") {
+                const name = colon < 0 ? spec : spec.slice(colon + 1);
+                if (!fs.existsSync(path.join(projectFile.project.root, "modules", name + ".lua"))) {
+                    report.add("VC0103", call.start, call.end, `module '${spec}' not found (${path.basename(projectFile.project.root)}/modules/${name}.lua)`);
+                }
+                continue;
+            }
+        } else if (spec.startsWith("project:")) {
+            continue; // the running project's modules: not known from a pack
+        }
         const colon = spec.indexOf(":");
         const packId = colon >= 0 ? spec.slice(0, colon) : pack.id;
         const name = colon >= 0 ? spec.slice(colon + 1) : spec;

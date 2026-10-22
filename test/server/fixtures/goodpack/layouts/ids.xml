@@ -1,0 +1,9 @@
+<container context="menu">
+    <label id="title">@Settings</label>
+    <button id="back" tooltip="@Back">@Back</button>
+    <panel id="list">
+        <label id="row"/>
+    </panel>
+    <label id="skipped" if="false"/>
+    <image id="icon" src="gui/check_mark" size="16,16"/>
+</container>

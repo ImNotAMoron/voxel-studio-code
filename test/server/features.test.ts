@@ -9,7 +9,7 @@ import { complete, definition, documentSymbols, hover } from "../../server/src/f
 import { vcmCompletions } from "../../server/src/features/vcm";
 import { createEnv } from "../../server/src/linter";
 import { scriptRole } from "../../server/src/lua/analyze";
-import { ERRPACK, GOODPACK, RES } from "./helpers";
+import { ERRPACK, FIXTURES, GOODPACK, RES } from "./helpers";
 
 const index = new ContentIndex({ resPath: RES, packDirs: [GOODPACK, ERRPACK] });
 const env = createEnv(index, {}, true);
@@ -133,4 +133,23 @@ test("quick fixes", () => {
         data: { createTexture: { atlas: "blocks", name: "nope" } },
     }]);
     assert.equal(tex[0].command!.command, "voxelcore.server.createTexture");
+});
+
+test("project scripts: kinds, callback completion, module definition", () => {
+    const root = path.join(FIXTURES, "errproject");
+    const pindex = new ContentIndex({ resPath: RES, roots: [root] });
+    const penv = createEnv(pindex, {}, true);
+    assert.equal(scriptRole(pindex, undefined, path.join(root, "start.lua")).kind, "app");
+    assert.equal(scriptRole(pindex, undefined, path.join(root, "project_client.lua")).kind, "project");
+    const client = path.join(root, "project_client.lua");
+    const c = at(client, "function on_menu_setup() end\n|");
+    const labels = complete(penv, c.doc, client, c.offset).map((i) => i.label);
+    assert.deepEqual(labels.sort(), ["on_level_clear", "on_level_setup", "on_menu_clear"]);
+    const start = path.join(root, "start.lua");
+    for (const spec of ["helper", "project:helper"]) {
+        const d = at(start, `local h = require "${spec.replace("helper", "hel|per")}"`);
+        const targets = definition(penv, d.doc, start, d.offset).map((l) => l.uri);
+        assert.equal(targets.length, 1, spec);
+        assert.ok(targets[0].endsWith("/errproject/modules/helper.lua"), targets[0]);
+    }
 });

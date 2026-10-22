@@ -1,0 +1,5 @@
+# fixture: project rules (VC0500-VC0502)
+name = "errproject"
+title = "Error project"
+base_packs = ["base", "projpack", "nosuchbase", "goodpack"]
+permissions = ["record-audio", "netwrk"]

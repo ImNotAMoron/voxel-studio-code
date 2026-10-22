@@ -1,0 +1,5 @@
+# fixture: debugging project modules (runs with --project and start.lua as the --script)
+name = "dbgproject"
+title = "Debug project"
+base_packs = ["base"]
+permissions = []

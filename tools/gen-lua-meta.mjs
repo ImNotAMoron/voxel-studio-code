@@ -1288,7 +1288,8 @@ function vc.str_setting(name) end
 ---@return table
 function vc.get_setting_info(name) end
 
---- Returns a project argument (project.toml / command line).
+--- Returns a project argument: \`--name value\` after a bare \`--\` on the engine command line
+--- (\`""\` for a \`--name\` flag without a value), or nil.
 ---@param name string
 ---@return any
 function vc.get_project_arg(name) end

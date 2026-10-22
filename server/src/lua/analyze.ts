@@ -227,7 +227,11 @@ export interface ScriptRole {
 }
 
 /** Determines the script kind from its location in the pack (see FEATURES.md §3.2). */
-export function scriptRole(index: ContentIndex, pack: PackInfo, file: string): ScriptRole {
+export function scriptRole(index: ContentIndex, pack: PackInfo | undefined, file: string): ScriptRole {
+    const projectFile = index.projectFile(file);
+    if (projectFile?.kind === "start") return { kind: "app" };
+    if (projectFile?.kind === "client") return { kind: "project" };
+    if (!pack) return { kind: "other" };
     const rel = path.relative(pack.root, file).split(path.sep).join("/");
     if (rel === "scripts/world.lua") return { kind: "world" };
     if (rel === "scripts/hud.lua") return { kind: "hud" };
@@ -246,4 +250,30 @@ export function scriptRole(index: ContentIndex, pack: PackInfo, file: string): S
         return { kind, users: users.map((u) => u.id), scriptName: name };
     }
     return { kind: "other" };
+}
+
+export interface NamedCall {
+    /** Callee text: `network.get`, `app.start_debug_instance`… */
+    callee: string;
+    start: number;
+    end: number;
+    /** First argument when it's a string literal. */
+    firstString?: string;
+}
+
+/** Calls through a global name or a chain of `.` fields (`a.b.c(...)`). */
+export function namedCalls(chunk: LuaNode): NamedCall[] {
+    const result: NamedCall[] = [];
+    walkLua(chunk, (node) => {
+        let arg: LuaNode | undefined;
+        if (node.type === "CallExpression") arg = (node.arguments as LuaNode[])[0];
+        else if (node.type === "StringCallExpression") arg = node.argument as LuaNode;
+        else if (node.type !== "TableCallExpression") return;
+        const base = node.base as LuaNode;
+        const callee = calleeName(base);
+        if (!callee || !base.range) return;
+        const firstString = arg?.type === "StringLiteral" ? unquoteLua(arg.raw as string) : undefined;
+        result.push({ callee, start: base.range[0], end: base.range[1], firstString });
+    });
+    return result;
 }

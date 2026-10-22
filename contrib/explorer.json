@@ -31,7 +31,7 @@
         "viewsWelcome": [
             {
                 "view": "voxelcore.content",
-                "contents": "No VoxelCore content packs in this workspace. A pack is a folder with a package.json that has an \"id\".\n[New Content Pack](command:voxelcore.newPack)"
+                "contents": "No VoxelCore content packs or projects in this workspace. A pack is a folder with a package.json that has an \"id\"; a project is a folder with a project.toml.\n[New Content Pack](command:voxelcore.newPack)\n[New Project](command:voxelcore.newProject)"
             },
             {
                 "view": "voxelcore.dependencies",
@@ -110,6 +110,11 @@
                     "command": "voxelcore.newPack",
                     "when": "view == voxelcore.content",
                     "group": "1_new"
+                },
+                {
+                    "command": "voxelcore.newProject",
+                    "when": "view == voxelcore.content",
+                    "group": "1_new"
                 }
             ],
             "view/item/context": [
@@ -149,6 +154,11 @@
                     "group": "1_new@3"
                 },
                 {
+                    "command": "voxelcore.newLayout",
+                    "when": "view == voxelcore.content && viewItem == voxelcore.pack",
+                    "group": "1_new@4"
+                },
+                {
                     "command": "voxelcore.explorer.revealInOS",
                     "when": "view == voxelcore.engine && viewItem =~ /^voxelcore\\.engine\\.(exe|res|user|log)$/",
                     "group": "1_reveal@1"
@@ -157,6 +167,21 @@
                     "command": "voxelcore.openLog",
                     "when": "view == voxelcore.engine && viewItem == voxelcore.engine.log",
                     "group": "inline"
+                },
+                {
+                    "command": "voxelcore.newPack",
+                    "when": "view == voxelcore.content && viewItem == voxelcore.project",
+                    "group": "1_new"
+                },
+                {
+                    "command": "voxelcore.runProject",
+                    "when": "view == voxelcore.content && viewItem == voxelcore.project",
+                    "group": "inline"
+                },
+                {
+                    "command": "voxelcore.runProject",
+                    "when": "view == voxelcore.content && viewItem == voxelcore.project",
+                    "group": "0_run"
                 }
             ],
             "commandPalette": [

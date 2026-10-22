@@ -18,12 +18,14 @@ modified by this work.
 | [ENGINE_NOTES.md](ENGINE_NOTES.md) | engine bugs and doc/code mismatches found so far (upstream issue candidates) |
 | [README.md](README.md) | user-facing description and settings |
 
-**Status (2026-10-22):** the MVP is complete. All P0 features in
+**Status (2026-10-23):** the MVP is complete. All P0 features in
 FEATURES.md work: 413 tests pass, 11/11 checks pass in real VS Code, and the
 `.vsix` packages. Done since: block (§5.4) and entity (§5.8) previews,
 engine log → Problems (§4.3), content explorer (§3.10), references and
 rename (§3.5), hot reload (§4.2), the Lua debugger (§4.4), asset hovers
-(§3.9) and locale files (§3.6). Now 459 tests and 16/16 smoke checks.
+(§3.9), locale files (§3.6), Explorer pack-folder icons, §3.7 XML
+layouts (all but the archived previews) and §3.11 projects. Now 595 tests
+and 21/21 smoke checks.
 The next work is the remaining **P1** features (see "Where to continue"
 below).
 
@@ -33,8 +35,9 @@ Run from `vscode-extension/`:
 
 ```sh
 npm install
-npm run gen          # regenerate schemas/ + meta/ from the engine repo (..); commit the output
+npm run gen          # regenerate schemas/, meta/ and shared/layouts/elements.json from the engine repo (..); commit the output
 npm run contrib      # merge contrib/*.json into package.json
+npm run icons        # regenerate the file icon theme icons/ from tools/gen-icons.mjs; commit the output
 npm run build        # esbuild → dist/{extension,server,cli,webview}.js
 npm run typecheck    # tsc for host/server/shared + webview (two tsconfigs)
 npm test             # node:test via tsx — all unit + engine integration tests
@@ -160,6 +163,52 @@ Language Server* (port 6019) to debug `vcls`.
 - Hover markdown images are data URIs (no cache dir in the server). Command
   links must be added to `HOVER_COMMANDS` in `src/extension.ts`, or VS Code
   won't run them.
+- XML layout data (`shared/layouts/elements.json`) is generated from
+  `gui_xml.cpp` by `tools/gen-layouts.mjs`. It lives in `shared/`, not
+  `meta/` or `schemas/`, because `gen-lua-meta` wipes `meta/` and
+  `gen-schemas` deletes unknown files in `schemas/`. The generator fails
+  on a `scripting::create_*` factory or value method it doesn't know: add
+  it to `LUA_FACTORIES` / `VALUE_TYPES`, don't loosen the check.
+- The layout parser (`shared/layouts/xml.ts`) must stay engine-exact up to
+  the first error: `peek()` skips whitespace, `goBack` after the
+  declaration check, escapes via `parseString`. Expected results in
+  `test/layouts/xml.test.ts` were produced by `xml.parse` in a headless
+  engine; re-check new cases the same way rather than guessing.
+  `XmlError.pos` is the engine's position (often one past the culprit),
+  `span` is what we highlight.
+- Layout value checks model the engine's readers (`shared/layouts/values.ts`):
+  `util::parse_double` is `from_chars` on a *prefix* (`5abc` is 5, no
+  error), `std::stoll` likewise; only text with no leading number throws.
+  Flag a value as an error only when the engine throws.
+- Layout callbacks: chunks compile as is, expressions as `"return " ..
+  value` (`lua::eval`, no parentheses: `size-func="-1, 40"` returns two
+  values). VC0411 is deliberately conservative: a name assigned in *any*
+  Lua file of the pack counts as defined (it may reach `_G`).
+- Layout names (`layoutNames.ts`) are checked *before* the file's own
+  content symbol in references/rename: `symbolAt` falls back to the file's
+  symbol anywhere in a file, which would hide a function or id under the
+  cursor. In a `.xml.lua`, VS Code may pick the Lua extension's rename
+  provider instead of ours; renaming from the `.xml` always updates both.
+- An `<image>` with a missing or unloaded texture still draws: Batch2D
+  binds a blank texture, so it's a plain rectangle of the element's colour.
+  Plain texture names must be in some `preload.json` `textures` list to be
+  loaded; `atlas:name` uses an atlas.
+- TextMate: the earliest match start wins and an `L:` injection only wins
+  ties, so the Lua-attribute injection starts at the whitespace before the
+  name, like xml.tmLanguage's attribute rule. Check grammar changes with
+  `_workbench.captureSyntaxTokens` (the smoke test does).
+- `icons/` is generated: edit `tools/gen-icons.mjs`, never the SVGs. A
+  repeated attribute on one SVG element makes the icon vanish silently
+  (the icons test checks this). An icon theme replaces the user's whole
+  theme, so it maps common languages too; `.json`/`.txt` go by
+  `languageIds` so `texts/*.txt` (vclang) keeps its own icon.
+- Projects (`shared/content/project.ts`): project files belong to no pack
+  (`res/project` lies inside the core pack's folder), so `fileRole` checks
+  `index.projectFile` first and `lintLua` runs on them with a placeholder
+  pack. Chunk names differ: `project:start.lua`, but `project_client.lua`
+  is loaded as its bare file name, so a bare `require` there throws. Headless,
+  a project's own `start.lua` stops at its first wait (`ServerMainloop`
+  needs `--script`), so engine tests pass it as the `--script` too.
 - Engine-dependent tests skip themselves when `../build/Debug/VoxelCore(.exe)`
   doesn't exist. They need `../packs/backrooms` as a real-world fixture pack.
 
@@ -176,7 +225,12 @@ P1 features from FEATURES.md, in a sensible order (each is independent):
 3. §5.3 VCA animation playback on top of
    the §5.8 skeleton view (`shared/models/entity.ts boneMatrices` takes the
    pose; reuse `webview/`).
-4. §3.7 XML layouts, then its P2 layout preview webview. XML `@key` texts
+4. §3.7 XML layouts (steps 1–4 done: element data in `shared/layouts/`,
+   the parser port, rules VC0400–VC0409, completion/hover/outline, colour
+   picker, Lua callbacks and their completion, names/references/thumbnails,
+   `@key` hovers, `document.<id>` in `.xml.lua`, snippets, *New Layout*).
+   Everything but the archived previews is done (layout preview,
+   engine-rendered layouts, XML models; see FEATURES.md §3.7). XML `@key` texts
    should get `translationsHover`, and XML textures `textureHover`. Add XML texture /
    layout references to `extractRefs` in `server/src/features/references.ts`
    then.

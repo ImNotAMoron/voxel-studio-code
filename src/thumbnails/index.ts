@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { workspaceIndex } from "../workspaceIndex";
 import { gutterIcon, textureLines } from "./lines";
 
-const LANGUAGES = new Set(["json", "jsonc", "vcm"]);
+const LANGUAGES = new Set(["json", "jsonc", "vcm", "xml"]);
 
 export function registerThumbnails(context: vscode.ExtensionContext) {
     const cacheDir = path.join(context.globalStorageUri.fsPath, "thumbnails");

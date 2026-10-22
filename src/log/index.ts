@@ -24,6 +24,8 @@ export interface SessionOptions {
     userDir?: string;
     /** The `--script` app script, for `script:<name>` chunks. */
     script?: string;
+    /** The `--project` folder, for `project:` chunks. */
+    project?: string;
 }
 
 /** One engine run (a process or a latest.log generation). */

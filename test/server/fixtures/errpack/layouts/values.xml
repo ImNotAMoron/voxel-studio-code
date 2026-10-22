@@ -1,0 +1,15 @@
+<container id="screen" size="400,300">
+    <panel id="a" pos="10" size="100 50" margin="1,2" padding="1,2,3,4,5" color="#FF00GG">
+        <label id="a" visible="yes" interactive multiline="True" z-index="1.5" tooltip-delay="soon">
+            Hello
+        </label>
+        <button id="dup" orientation="Horizontal" gravity="center" cursor="hand" text-align="middle">
+            <label id="inner"/>
+        </button>
+        <button id="dup"><label id="lost"/></button>
+        <trackbar min="abc" max="1x" step="1" track-width="" color="255,0,0"/>
+        <image id="root" src="gui/x" color="#FFF"/>
+        <select mode="dropdown" selected="a"/>
+        <textbox syntax="python" markup="html"/>
+    </panel>
+</container>

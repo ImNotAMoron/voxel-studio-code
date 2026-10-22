@@ -1,0 +1,4 @@
+<container id="entry_%{id}" onclick="%{callback}" z-index="%{index}" size="0,40">
+    <label pos="40,6">%{title}</label>
+    <image src="%{icon}" size="32,32" if="%{icon}"/>
+</container>

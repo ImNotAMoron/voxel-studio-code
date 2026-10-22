@@ -1,0 +1,16 @@
+<panel orientaton="horizontal" id="a" id="b">
+    <buton onclick="print(1)"/>
+    <option value="x">X</option>
+    <label>text<image src="gui/x"/></label>
+    stray text
+    <image src="gui/x">ignored text</image>
+    <select selected="1">
+        <label/>
+        <option value="1">One</option>
+    </select>
+    <inventory>
+        <slot index="0"/>
+    </inventory>
+    <slots-grid rows="1" count="2"/>
+    <container interval="5"/>
+</panel>

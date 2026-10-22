@@ -10,6 +10,8 @@ import * as path from "node:path";
 import { EngineHandle, LaunchArguments, VoxelCoreDebugSession } from "../../src/debug/session";
 import { freePort } from "../../src/debug/vcdbg";
 import { REPO_ROOT, RES } from "../server/helpers";
+import { ContentIndex } from "../../shared/content/index";
+import { LogResolver } from "../../shared/log/resolve";
 
 const EXE = path.join(REPO_ROOT, "build", "Debug", process.platform === "win32" ? "VoxelCore.exe" : "VoxelCore");
 const FIXTURES = path.join(__dirname, "fixtures");
@@ -25,13 +27,16 @@ class Driver {
     proc?: ChildProcess;
     output = "";
 
-    constructor(script: string) {
+    /** `project`: also pass `--project` (project: chunks resolve to it). */
+    constructor(script: string, project?: string) {
+        const resolver = project ? new LogResolver(new ContentIndex({ resPath: RES, roots: [project] }), { project, script }) : undefined;
         this.session = new VoxelCoreDebugSession(
             {
                 launch: async (args: LaunchArguments): Promise<EngineHandle> => {
                     const port = await freePort();
                     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vc-dbg-"));
-                    const proc = spawn(EXE, ["--headless", "--res", RES, "--dir", dir, "--script", args.script!, "--tps", "60", "--dbg-server", `tcp:${port}`]);
+                    const entry = [...(project ? ["--project", project] : []), "--script", args.script!];
+                    const proc = spawn(EXE, ["--headless", "--res", RES, "--dir", dir, ...entry, "--tps", "60", "--dbg-server", `tcp:${port}`]);
                     this.proc = proc;
                     proc.stdout!.on("data", (d) => (this.output += d));
                     proc.stderr!.on("data", (d) => (this.output += d));
@@ -44,8 +49,10 @@ class Driver {
                 attach: async () => {
                     throw new Error("not used");
                 },
-                toVirtual: (file) => (path.resolve(file) === path.resolve(script) ? `script:${path.basename(file)}` : undefined),
-                toFile: (vpath) => (vpath === `script:${path.basename(script)}` ? script : undefined),
+                toVirtual: (file) => resolver ? resolver.virtualPath(file)
+                    : path.resolve(file) === path.resolve(script) ? `script:${path.basename(file)}` : undefined,
+                toFile: (vpath) => resolver ? resolver.resolveVirtual(vpath)
+                    : vpath === `script:${path.basename(script)}` ? script : undefined,
             },
             (message) => {
                 if (message.type === "response") this.responses.set(message.request_seq, message);
@@ -183,5 +190,27 @@ test("error() stops with the message; the filter can turn it off", { skip, timeo
         assert.ok(quiet.proc!.exitCode === null, "still running");
     } finally {
         await quiet.end();
+    }
+});
+
+// headless, a project's own start.lua stops at its first yield (ServerMainloop needs
+// --script, ENGINE_NOTES.md), so the project runs with its start.lua as the --script
+test("project modules: breakpoints map through project: chunks", { skip, timeout: 60000 }, async () => {
+    const project = path.join(FIXTURES, "project");
+    const start = path.join(project, "start.lua");
+    const module = path.join(project, "modules", "counter.lua");
+    const d = new Driver(start, project);
+    try {
+        await d.request("initialize", { adapterID: "voxelcore" });
+        await d.request("launch", { mode: "headless", script: start, project });
+        const bp = await d.request("setBreakpoints", { source: { path: module }, breakpoints: [{ line: 4 }] });
+        assert.equal(bp.breakpoints[0].verified, true);
+        const stop = await d.stopped(() => d.request("configurationDone"));
+        assert.equal(stop.event.reason, "breakpoint");
+        assert.deepEqual([stop.top.name, stop.top.line, stop.top.source.path], ["bump", 4, module]);
+        assert.equal(stop.frames[1].source.path, start);
+        assert.equal(stop.frames[1].line, 4);
+    } finally {
+        await d.end();
     }
 });

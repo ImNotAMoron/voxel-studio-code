@@ -63,6 +63,17 @@
                                 },
                                 "description": "Extra engine arguments"
                             },
+                            "project": {
+                                "type": "string",
+                                "description": "Project folder (with a project.toml), passed as --project. 'run' starts the project's start.lua; 'quickWorld' and 'headless' replace it with their script"
+                            },
+                            "projectArgs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "Project arguments: --key value pairs (a --flag alone is \"\"), passed after a bare --; scripts read them with vc.get_project_arg(\"key\")"
+                            },
                             "port": {
                                 "type": "number",
                                 "description": "Debugger port (default: a free one)"

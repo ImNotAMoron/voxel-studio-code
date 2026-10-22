@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import { ContentIndex, parseDependency } from "../../shared/content/index";
 import { assemblePacks, type AssemblePack } from "../../shared/content/assemble";
-import { Locales, blockIcon, explorerPacks, idToCaption, itemIcon, packCategories, packDependencies, unitCaption } from "../../src/explorer/model";
-import { BACKROOMS, BASE, RES } from "../server/helpers";
+import { Locales, blockIcon, explorerPacks, explorerProjects, folderKey, packRootFolders, idToCaption, itemIcon, packCategories, packDependencies, unitCaption } from "../../src/explorer/model";
+import { BACKROOMS, BASE, FIXTURES, GOODPACK, RES } from "../server/helpers";
 
 const index = new ContentIndex({ resPath: RES, packDirs: [BACKROOMS] });
 
@@ -82,4 +82,31 @@ test("dependencies of a workspace pack", () => {
     assert.deepEqual(deps.dependencies.map((d) => [d.id, d.status]), [["base", "ok"]]);
     assert.deepEqual(deps.order, ["core", "base", "backrooms"]);
     assert.equal(deps.error, undefined);
+});
+
+test("pack root folders inside the workspace get decorations", () => {
+    const roots = packRootFolders(index, [path.dirname(BACKROOMS)]);
+    assert.deepEqual([...roots.values()].map((p) => p.id), ["backrooms"]);
+    assert.equal(roots.get(folderKey(BACKROOMS + path.sep))?.id, "backrooms");
+    // the engine repo as workspace: built-in packs under res/ count too
+    const all = packRootFolders(index, [path.dirname(RES)]);
+    assert.ok(all.has(folderKey(BASE)));
+    assert.ok(!all.has(folderKey(path.dirname(BASE))));
+    assert.equal(folderKey("C:\\Packs\\X\\", "win32"), folderKey("c:\\packs\\x", "win32"));
+});
+
+test("explorer projects: files, permissions, base packs, content packs", () => {
+    const root = path.join(FIXTURES, "errproject");
+    const pindex = new ContentIndex({ resPath: RES, roots: [root], packDirs: [GOODPACK] });
+    const [p] = explorerProjects(pindex);
+    assert.equal(p.project.title, "Error project");
+    assert.deepEqual(p.files.map((r) => [r.label, r.status]), [["project.toml", "ok"], ["start.lua", "ok"], ["project_client.lua", "ok"]]);
+    assert.deepEqual(p.permissions.map((r) => [r.label, r.status]), [["record-audio", "ok"], ["netwrk", "unknown"]]);
+    assert.deepEqual(p.basePacks.map((r) => [r.label, r.status, r.description]), [
+        ["base", "ok", "res/content"],
+        ["projpack", "ok", "project content"],
+        ["nosuchbase", "missing", "not found"],
+        ["goodpack", "missing", "outside the content sources"],
+    ]);
+    assert.deepEqual(p.packs.map((x) => x.id), ["projpack"]);
 });

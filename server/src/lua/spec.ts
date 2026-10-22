@@ -2,11 +2,12 @@
 // Sources: doc/en/scripting/events.md, doc/en/scripting/ecs.md,
 // doc/en/world-generator.md and the registration code
 // (src/logic/scripting/scripting.cpp register_event, scripting_hud.cpp,
-// scripting_entities.cpp, res/modules/internal/stdcomp.lua).
+// scripting_entities.cpp, res/modules/internal/stdcomp.lua); project scripts:
+// src/devtools/AppScriptsControl.cpp, scripting.cpp (LuaProjectScript).
 
 export type ScriptKind =
     | "block" | "item" | "unit" | "world" | "hud" | "content" | "component"
-    | "layout" | "generator" | "module" | "other";
+    | "layout" | "generator" | "module" | "app" | "project" | "other";
 
 export interface Callback {
     name: string;
@@ -104,6 +105,15 @@ export const GENERATOR_CALLBACKS: Callback[] = [
     cb("place_structures_wide", "x, z, w, d, chunk_height", "Returns structure/tunnel placements outside the chunk."),
 ];
 
+// LuaProjectScript::onScreenChange: `on_<Screen::getName()>_setup/_clear`, no arguments,
+// errors are logged (call_nothrow). Screens: MenuScreen "menu", LevelScreen "level".
+export const PROJECT_CALLBACKS: Callback[] = [
+    cb("on_menu_setup", "", "Called when the main menu screen is shown (also at start-up). `res/project` shows the menu here: `menu.page = \"main\"; menu.visible = true`."),
+    cb("on_menu_clear", "", "Called when the main menu screen is replaced (a world opens)."),
+    cb("on_level_setup", "", "Called when a world screen is shown."),
+    cb("on_level_clear", "", "Called when the world screen is replaced (back to the menu)."),
+];
+
 export function callbacksFor(kind: ScriptKind): Callback[] | undefined {
     switch (kind) {
         case "block": return BLOCK_CALLBACKS;
@@ -115,6 +125,7 @@ export function callbacksFor(kind: ScriptKind): Callback[] | undefined {
         case "component": return COMPONENT_CALLBACKS;
         case "layout": return LAYOUT_CALLBACKS;
         case "generator": return GENERATOR_CALLBACKS;
+        case "project": return PROJECT_CALLBACKS;
         default: return undefined;
     }
 }
@@ -130,13 +141,15 @@ export const KIND_LABEL: Record<ScriptKind, string> = {
     layout: "a layout script",
     generator: "a generator script",
     module: "a module",
+    app: "an app script (project start.lua)",
+    project: "a project client script (project_client.lua)",
     other: "a script",
 };
 
 /** Which kinds define a callback (for "this is a world.lua callback" hints). */
 export function kindsDefining(name: string): ScriptKind[] {
     const kinds: ScriptKind[] = [];
-    for (const kind of ["block", "item", "world", "hud", "content", "component", "layout", "generator"] as ScriptKind[]) {
+    for (const kind of ["block", "item", "world", "hud", "content", "component", "layout", "generator", "project"] as ScriptKind[]) {
         if (callbacksFor(kind)!.some((c) => c.name === name)) kinds.push(kind);
     }
     return kinds;

@@ -33,9 +33,10 @@ class InlineAdapter implements vscode.DebugAdapter {
 
 /** Engine side of one debug session. */
 class Host implements SessionHost {
-    private resolver = () => new LogResolver(workspaceIndex.get(), { userDir: this.userDir, script: this.script });
+    private resolver = () => new LogResolver(workspaceIndex.get(), { userDir: this.userDir, script: this.script, project: this.project });
     private userDir?: string;
     private script?: string;
+    private project?: string;
 
     toVirtual(file: string) {
         return this.resolver().virtualPath(file);
@@ -49,7 +50,7 @@ class Host implements SessionHost {
         const mode = args.mode ?? "quickWorld";
         const def: VoxelCoreTaskDefinition = {
             type: "voxelcore", action: mode, world: args.world, generator: args.generator, seed: args.seed,
-            recreate: args.recreate, script: args.script, args: args.args,
+            recreate: args.recreate, script: args.script, args: args.args, project: args.project, projectArgs: args.projectArgs,
         };
         const port = args.port ?? (await freePort());
         const wait = mode === "quickWorld" && args.waitForDebugger !== false;
@@ -57,6 +58,7 @@ class Host implements SessionHost {
         if (!prepared) throw new Error("The VoxelCore engine isn't configured (voxelcore.executable)");
         this.userDir = prepared.userDir;
         this.script = prepared.script;
+        this.project = prepared.project;
         output(`> ${prepared.executable} ${prepared.args.join(" ")}\n`);
         const log = startEngineSession(prepared);
         const child = cp.spawn(prepared.executable, prepared.args, { cwd: path.dirname(prepared.executable) });

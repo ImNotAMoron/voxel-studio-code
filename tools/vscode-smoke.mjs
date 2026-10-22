@@ -61,6 +61,11 @@ fs.writeFileSync(
 );
 // locale files (FEATURES.md §3.6): no translation of the smoke blocks' captions
 write("texts/ru_RU.txt", "# smoke\nsomething=что-то\n");
+// XML layouts (FEATURES.md §3.7): a misspelled attribute, and a place to complete
+write("layouts/menu.xml", '<panel orientaton="horizontal" size="200,100" color="#FF8000">\n    <label>Hi</label>\n    \n</panel>\n');
+// Lua inside callback attributes (the id's value is not Lua)
+write("layouts/lua.xml", `<panel id='onclick' onclick='menu:back()'>\n    <checkbox consumer="function(v) return v end"/>\n    <button onclick="refresh()">R</button>\n    <image src="gui/check_mark" size="16,16"/>\n    <label id="title" context="menu">@Settings</label>\n</panel>\n`);
+write("layouts/lua.xml.lua", "local count = 0\n\nfunction refresh()\n    count = count + 1\n    document.title.text = tostring(count)\nend\n");
 // references + rename (FEATURES.md §3.5)
 write("scripts/refs.lua", 'local good = block.index("smoke:good")\n');
 // engine log → Problems (FEATURES.md §4.3): a world script error, run headless
@@ -75,6 +80,12 @@ fs.writeFileSync(
         "",
     ].join("\n")
 );
+// projects: a project with a content pack, an unknown permission and an ungranted call
+const game = path.join(ws, "game");
+fs.mkdirSync(path.join(game, "content", "gamepack"), { recursive: true });
+fs.writeFileSync(path.join(game, "project.toml"), 'name = "game"\ntitle = "Smoke Game"\nbase_packs = ["base", "gamepack"]\npermissions = ["netwrk"]\n');
+fs.writeFileSync(path.join(game, "start.lua"), 'network.get("https://example.com", function() end)\n');
+fs.writeFileSync(path.join(game, "content", "gamepack", "package.json"), JSON.stringify({ id: "gamepack", title: "Game pack", version: "1.0" }, null, 4));
 const exe = path.join(engine, "build", "Debug", process.platform === "win32" ? "VoxelCore.exe" : "VoxelCore");
 fs.mkdirSync(path.join(ws, ".vscode"), { recursive: true });
 fs.writeFileSync(

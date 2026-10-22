@@ -1,0 +1,14 @@
+{
+    "contributes": {
+        "grammars": [
+            {
+                "scopeName": "voxelcore.layout.lua-attributes",
+                "path": "./syntaxes/vclayout-lua.injection.json",
+                "injectTo": ["text.xml"],
+                "embeddedLanguages": {
+                    "meta.embedded.inline.lua": "lua"
+                }
+            }
+        ]
+    }
+}

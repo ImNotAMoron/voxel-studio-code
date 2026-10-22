@@ -1,0 +1,252 @@
+{
+  "iconDefinitions": {
+    "folder": {
+      "iconPath": "./folder.svg"
+    },
+    "folder-open": {
+      "iconPath": "./folder-open.svg"
+    },
+    "folder-blocks": {
+      "iconPath": "./folder-blocks.svg"
+    },
+    "folder-blocks-open": {
+      "iconPath": "./folder-blocks-open.svg"
+    },
+    "folder-items": {
+      "iconPath": "./folder-items.svg"
+    },
+    "folder-items-open": {
+      "iconPath": "./folder-items-open.svg"
+    },
+    "folder-entities": {
+      "iconPath": "./folder-entities.svg"
+    },
+    "folder-entities-open": {
+      "iconPath": "./folder-entities-open.svg"
+    },
+    "folder-skeletons": {
+      "iconPath": "./folder-skeletons.svg"
+    },
+    "folder-skeletons-open": {
+      "iconPath": "./folder-skeletons-open.svg"
+    },
+    "folder-components": {
+      "iconPath": "./folder-components.svg"
+    },
+    "folder-components-open": {
+      "iconPath": "./folder-components-open.svg"
+    },
+    "folder-generators": {
+      "iconPath": "./folder-generators.svg"
+    },
+    "folder-generators-open": {
+      "iconPath": "./folder-generators-open.svg"
+    },
+    "folder-block_materials": {
+      "iconPath": "./folder-block_materials.svg"
+    },
+    "folder-block_materials-open": {
+      "iconPath": "./folder-block_materials-open.svg"
+    },
+    "folder-models": {
+      "iconPath": "./folder-models.svg"
+    },
+    "folder-models-open": {
+      "iconPath": "./folder-models-open.svg"
+    },
+    "folder-textures": {
+      "iconPath": "./folder-textures.svg"
+    },
+    "folder-textures-open": {
+      "iconPath": "./folder-textures-open.svg"
+    },
+    "folder-sounds": {
+      "iconPath": "./folder-sounds.svg"
+    },
+    "folder-sounds-open": {
+      "iconPath": "./folder-sounds-open.svg"
+    },
+    "folder-layouts": {
+      "iconPath": "./folder-layouts.svg"
+    },
+    "folder-layouts-open": {
+      "iconPath": "./folder-layouts-open.svg"
+    },
+    "folder-scripts": {
+      "iconPath": "./folder-scripts.svg"
+    },
+    "folder-scripts-open": {
+      "iconPath": "./folder-scripts-open.svg"
+    },
+    "folder-modules": {
+      "iconPath": "./folder-modules.svg"
+    },
+    "folder-modules-open": {
+      "iconPath": "./folder-modules-open.svg"
+    },
+    "folder-texts": {
+      "iconPath": "./folder-texts.svg"
+    },
+    "folder-texts-open": {
+      "iconPath": "./folder-texts-open.svg"
+    },
+    "folder-shaders": {
+      "iconPath": "./folder-shaders.svg"
+    },
+    "folder-shaders-open": {
+      "iconPath": "./folder-shaders-open.svg"
+    },
+    "folder-fonts": {
+      "iconPath": "./folder-fonts.svg"
+    },
+    "folder-fonts-open": {
+      "iconPath": "./folder-fonts-open.svg"
+    },
+    "folder-particles": {
+      "iconPath": "./folder-particles.svg"
+    },
+    "folder-particles-open": {
+      "iconPath": "./folder-particles-open.svg"
+    },
+    "folder-presets": {
+      "iconPath": "./folder-presets.svg"
+    },
+    "folder-presets-open": {
+      "iconPath": "./folder-presets-open.svg"
+    },
+    "folder-config": {
+      "iconPath": "./folder-config.svg"
+    },
+    "folder-config-open": {
+      "iconPath": "./folder-config-open.svg"
+    },
+    "file": {
+      "iconPath": "./file.svg"
+    },
+    "file-vcm": {
+      "iconPath": "./file-vcm.svg"
+    },
+    "file-vca": {
+      "iconPath": "./file-vca.svg"
+    },
+    "file-vec3": {
+      "iconPath": "./file-vec3.svg"
+    },
+    "file-obj": {
+      "iconPath": "./file-obj.svg"
+    },
+    "file-lua": {
+      "iconPath": "./file-lua.svg"
+    },
+    "file-json": {
+      "iconPath": "./file-json.svg"
+    },
+    "file-content": {
+      "iconPath": "./file-content.svg"
+    },
+    "file-toml": {
+      "iconPath": "./file-toml.svg"
+    },
+    "file-image": {
+      "iconPath": "./file-image.svg"
+    },
+    "file-audio": {
+      "iconPath": "./file-audio.svg"
+    },
+    "file-locale": {
+      "iconPath": "./file-locale.svg"
+    },
+    "file-text": {
+      "iconPath": "./file-text.svg"
+    },
+    "file-xml": {
+      "iconPath": "./file-xml.svg"
+    },
+    "file-shader": {
+      "iconPath": "./file-shader.svg"
+    },
+    "file-markdown": {
+      "iconPath": "./file-markdown.svg"
+    }
+  },
+  "file": "file",
+  "folder": "folder",
+  "folderExpanded": "folder-open",
+  "rootFolder": "folder",
+  "rootFolderExpanded": "folder-open",
+  "folderNames": {
+    "blocks": "folder-blocks",
+    "items": "folder-items",
+    "entities": "folder-entities",
+    "skeletons": "folder-skeletons",
+    "components": "folder-components",
+    "generators": "folder-generators",
+    "block_materials": "folder-block_materials",
+    "models": "folder-models",
+    "textures": "folder-textures",
+    "sounds": "folder-sounds",
+    "layouts": "folder-layouts",
+    "scripts": "folder-scripts",
+    "modules": "folder-modules",
+    "texts": "folder-texts",
+    "shaders": "folder-shaders",
+    "fonts": "folder-fonts",
+    "particles": "folder-particles",
+    "presets": "folder-presets",
+    "config": "folder-config"
+  },
+  "folderNamesExpanded": {
+    "blocks": "folder-blocks-open",
+    "items": "folder-items-open",
+    "entities": "folder-entities-open",
+    "skeletons": "folder-skeletons-open",
+    "components": "folder-components-open",
+    "generators": "folder-generators-open",
+    "block_materials": "folder-block_materials-open",
+    "models": "folder-models-open",
+    "textures": "folder-textures-open",
+    "sounds": "folder-sounds-open",
+    "layouts": "folder-layouts-open",
+    "scripts": "folder-scripts-open",
+    "modules": "folder-modules-open",
+    "texts": "folder-texts-open",
+    "shaders": "folder-shaders-open",
+    "fonts": "folder-fonts-open",
+    "particles": "folder-particles-open",
+    "presets": "folder-presets-open",
+    "config": "folder-config-open"
+  },
+  "fileExtensions": {
+    "vcm": "file-vcm",
+    "vca": "file-vca",
+    "vec3": "file-vec3",
+    "obj": "file-obj",
+    "lua": "file-lua",
+    "toml": "file-toml",
+    "png": "file-image",
+    "jpg": "file-image",
+    "ogg": "file-audio",
+    "wav": "file-audio",
+    "xml": "file-xml",
+    "glslv": "file-shader",
+    "glslf": "file-shader",
+    "glsl": "file-shader",
+    "md": "file-markdown"
+  },
+  "fileNames": {
+    "content.json": "file-content"
+  },
+  "languageIds": {
+    "json": "file-json",
+    "jsonc": "file-json",
+    "lua": "file-lua",
+    "vcm": "file-vcm",
+    "vca": "file-vca",
+    "vclang": "file-locale",
+    "plaintext": "file-text",
+    "xml": "file-xml",
+    "toml": "file-toml",
+    "markdown": "file-markdown"
+  },
+  "hidesExplorerArrows": false
+}

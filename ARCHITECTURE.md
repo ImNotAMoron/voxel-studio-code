@@ -25,7 +25,7 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
 |---|---|---|
 | `src/extension.ts` | integration | activation: calls every `register*`, starts the LanguageClient, sets the `voxelcore.hasPacks` context key |
 | `src/packs.ts`, `src/packs.manifest.ts` | integration | finds workspace packs, the engine `res/` and the executable (`findWorkspacePacks`, `findResPath`, `findExecutable`, `pickPack`, `packRootOf`) |
-| `src/scaffold/` | integration | *New Pack/Block/Item/Entity/Component* commands; `templates.ts` is pure |
+| `src/scaffold/` | integration | *New Project/Pack/Block/Item/Entity/Component/Layout* commands; `templates.ts` is pure |
 | `src/run/` | integration | `voxelcore` TaskProvider (CustomExecution pseudoterminal), run commands, status bar; `userdir.ts`: pack junctions/symlinks + quick-world app script |
 | `src/schemas/` | integration | TOML schema associations + pack-root `json.schemas` (workspace settings, with consent) |
 | `src/lua/` | lua | configures `sumneko.lua` (`Lua.workspace.library` → `meta/`, globals, runtime); `settings.ts` is pure |
@@ -35,16 +35,24 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
 | `src/hotreload/` | integration | `plan.ts` (saved file → asset / module / content / restart, engine paths), `bridge.ts` (dev bridge files), `index.ts` (save + watcher → channel, status bar) |
 | `shared/assets/` | server | `png.ts` (pngjs decode/encode, nearest scaling, alpha kind, data-URI thumbnails), `audio.ts` (OGG/WAV durations) |
 | `src/thumbnails/` | integration | gutter texture icons; `lines.ts` (pure: line → texture via the server's `extractRefs`, cached 32 px icons in global storage) |
-| `src/explorer/` | Content / Dependencies / Engine tree views; `model.ts` is pure (categories, icons, captions, dependency rows) |
+| `src/explorer/` | Content / Dependencies / Engine tree views; `model.ts` is pure (categories, icons, captions, dependency rows, pack root folders); `decorations.ts` badges pack folders in VS Code's Explorer |
+| `icons/` | generated | the *VoxelCore Content Packs* file icon theme (SVGs + theme JSON), output of `tools/gen-icons.mjs` |
 | `shared/log/` | integration | `parse.ts` (log line format, streaming parser), `problems.ts` (entry → problem + target), `resolve.ts` (target → file range via `ContentIndex`), `links.ts` |
 | `src/preview/` | preview | preview panel + `.vec3` custom editor (`index.ts`), texture resolver, `defs.ts` (pure: preview kind of a file, block/entity/skeleton inputs via `ContentIndex`) |
+| `shared/layouts/` | generated + integration | `elements.json` (output of `tools/gen-layouts.mjs`: XML UI elements, attributes, types, Lua callback kinds), typed accessors in `index.ts`, `xml.ts`: the `xml::parse` port with offsets + `layoutContextAt` (completion context), and `values.ts`: models of the engine's attribute value readers |
+| `syntaxes/vclayout-lua.injection.json` | generated | TextMate injection (into `text.xml`) for Lua in layout callback attributes; output of `tools/gen-layouts.mjs` |
+| `shared/layouts/ids.ts`, `server/src/features/layoutDocument.ts`, `server/src/features/layoutAssets.ts` | shared / server | the ids `document.<id>` sees (getIndices model) and their completion/hover/definition in `.xml.lua`; preloaded texture names and binding names |
+| `server/src/features/layoutNames.ts` | server | names shared by a layout and its script (functions, element ids): occurrences in both files for references and rename |
+| `server/src/features/layoutLua.ts`, `server/src/lua/globals.ts` | server | Lua in layout callbacks (compiled like the engine), the layout's `.xml.lua` functions, pack-wide and engine-wide global names |
+| `server/src/rules/project.ts` | server | project.toml rules VC0500–VC0502; the Lua side (VC0503 permissions, VC0504 bare require, project modules) is in `rules/lua.ts` |
+| `server/src/rules/layout.ts`, `server/src/features/layout.ts` | server | layout rules VC0400–VC0416; layout completion, hover, outline, colours (`colorProvider`) |
 | `shared/vcm/parser.ts` | integration | VCM/VCA text → AST with offsets (mirrors `xml::VcmParser`) |
 | `shared/models/` | preview | mesh builders `vcm.ts`, `obj.ts`, `vec3.ts` (ports of engine loaders), `block.ts` (BlockLoader/ContentBuilder/BlocksRenderer port), `entity.ts` (EntityLoader + rigging), `assets.ts` (stored model names), `jsondef.ts` (JSON with spans), `protocol.ts` (host↔webview messages), `selection.ts` |
-| `shared/content/` | server | `ContentIndex`: the workspace model of packs and units; `pack.ts` (id/dependency/version helpers, Levenshtein), `json.ts` (tolerant engine-JSON reader), `assemble.ts` (port of `PacksManager::assemble`: load order) |
+| `shared/content/` | server | `ContentIndex`: the workspace model of packs, units and projects; `project.ts` (project.toml fields, permissions, `requiredPermission`, `grantPermissionEdit`); `pack.ts` (id/dependency/version helpers, Levenshtein), `json.ts` (tolerant engine-JSON reader), `assemble.ts` (port of `PacksManager::assemble`: load order) |
 | `server/src/` | server | `server.ts` (LSP), `cli.ts`, `linter.ts` (runs rules), `schemas.ts` (loads `schemas/` for keys/quick fixes), `rules/*` (lint rules + registry), `lua/` (script-kind spec, luaparse analysis), `vcm/spec.ts` (VCM/VCA element/attribute spec), `features/*` (completion, hover, definition, symbols, code actions; `references.ts` + `navigation.ts`: references, rename, workspace symbols, code lens) |
 | `src/navigation.ts` | server | client side of references/rename: `voxelcore.showReferences` (code lens), explorer *Find VoxelCore References* / *Rename Content…* |
 | `webview/src/` | preview | `viewer.ts` (three.js scene), `panel.ts` (side panel), `placeholders.ts` |
-| `tools/` | — | `gen-schemas.mjs` + `schema-overlay/`, `gen-lua-meta.mjs`, `merge-contrib.mjs`, `vscode-smoke.mjs` |
+| `tools/` | — | `gen-schemas.mjs` + `schema-overlay/`, `gen-lua-meta.mjs`, `gen-layouts.mjs`, `merge-contrib.mjs`, `gen-icons.mjs`, `vscode-smoke.mjs` |
 | `schemas/`, `meta/` | generated | JSON Schemas + `catalog.json`; LuaLS `---@meta` files + `libraries.json`. **Committed** |
 | `contrib/*.json` | each area | manifest fragments merged into `package.json` |
 | `syntaxes/`, `languages/`, `snippets/`, `media/` | integration/preview | TextMate grammars, language config, snippets, webview CSS |
@@ -178,6 +186,10 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
   `EngineLog.onDidChangeSessions` and settings changes. Internal commands
   `voxelcore.explorer.inspect`, `voxelcore.log.inspect` and
   `voxelcore.log.feed` exist for the smoke test.
+- **Explorer icons.** Pack roots are found through `workspaceIndex`
+  (`packRootFolders`) and decorated, because an icon theme can only match
+  folder *names*. The icon theme is generated; `test/integration/icons.test.ts`
+  fails when `icons/` is stale or an SVG is invalid.
 
 ## Client ↔ server contract
 
@@ -211,7 +223,7 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
 
 ## Known gaps (as of the MVP)
 
-- Linter: no XML layout or locale checks; hitbox checks ignore rotation;
+- Layout rename from a `.xml.lua` competes with the Lua extension's rename provider; from the `.xml` side ours is the only one; callback names are checked against the `.xml.lua` on disk (re-checked on save, not while the script is being typed); hitbox checks ignore rotation;
   assets resolve against every indexed pack, not only declared
   dependencies; cross-file effects of an edit refresh on save.
 - Lua: `require "pack:mod"` isn't resolvable by LuaLS (vcls handles
@@ -225,7 +237,7 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
 - Log: client-only errors (assets, shaders, audio) are matched only by the
   generic `<vpath>: msg` pattern and have no recorded fixtures; no
   `$voxelcore` problem matcher.
-- References: XML layouts, locale keys and generator structure/fragment
+- References: locale keys, `document.<id>` uses and generator structure/fragment
   names aren't searched. Strings built at runtime (`"steps/"..name`) can't
   be found. Rename doesn't update the locale key of a unit's default
   caption (`id_to_caption`). A file rename from
@@ -240,7 +252,7 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
   engine* or an external engine). A visible asset change after
   `hot-reload` was checked only through the engine log ("enqueued to
   reload: 1").
-- Hovers: images are data URIs; how big hovers render wasn't checked by eye. Model hovers have no rendered thumbnail. XML layout textures and `@key` texts aren't covered (§3.7).
+- Hovers: images are data URIs; how big hovers render wasn't checked by eye. Model hovers have no rendered thumbnail. Layout textures and `@key` texts are covered since §3.7 steps 8–10.
 - Explorer: no delete action; textures of other atlases
   than `blocks`/`items` aren't used as icons for entities.
 - Not yet verified by hand in VS Code: visible texture rendering in the

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- a menu with every kind of content -->
+<container size="400,300" color="#00000080" context="menu" gravity="center-center">
+    <panel orientation="horizontal" interval="4" padding="2" scrollable="true">
+        <button onclick="menu:back()" tooltip="@Back" cursor="pointer">@Back</button>
+        <button padding="4"><image src="gui/check_mark" region="0,0,1,1"/></button>
+        <checkbox checked="true" consumer="function(v) print(v) end">@Enabled</checkbox>
+    </panel>
+    <label multiline="true" text-wrap="true" markup="md" valign="top">Line\nNext &amp; more</label>
+    <textbox hint="@Search" syntax="lua" sub-consumer="function(s) end" line-numbers="true">print(1)</textbox>
+    <trackbar min="0" max="10" step="1" track-width="2" change-on-release="true"/>
+    <select selected="b" mode="button" onselect="function(v) end">
+        <option value="a">A</option>
+        <option value="b">@B</option>
+    </select>
+    <splitbox split-pos="0.3" orientation="horizontal"><panel/><panel/></splitbox>
+    <modelviewer src="block" center="0.5,0.5,0.5" cam-rotation="45,-45,0"/>
+    <bogus if="false"/>
+    <inventory>
+        <slots-grid rows="1" cols="9" sharefunc="share" item-source="true"/>
+        <slot index="0" updatefunc="update" pos="0,0"/>
+        <label>slots and ordinary elements mix</label>
+    </inventory>
+    <iframe src="goodpack:crate"/>
+    <bindbox binding="movement.forward" padding="4"/>
+    <pagebox id="pages"/>
+    <canvas size="64,64"/>
+</container>

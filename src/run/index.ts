@@ -9,6 +9,7 @@ import { engineChannels } from "../debug/channels";
 import { VcDbgClient, freePort } from "../debug/vcdbg";
 import { clearDebuggerReady } from "../hotreload/bridge";
 import { quickWorldScript, syncPackLinks } from "./userdir";
+import { workspaceIndex } from "../workspaceIndex";
 
 export const TASK_TYPE = "voxelcore";
 
@@ -23,6 +24,10 @@ export interface VoxelCoreTaskDefinition extends vscode.TaskDefinition {
     script?: string;
     /** extra engine arguments */
     args?: string[];
+    /** project folder (`--project`) */
+    project?: string;
+    /** project arguments, after `--` */
+    projectArgs?: string[];
 }
 
 let log: EngineLog;
@@ -49,6 +54,7 @@ export function registerRun(context: vscode.ExtensionContext, engineLog: EngineL
             vscode.tasks.executeTask(createTask({ type: TASK_TYPE, action: "run" }, "Run engine"))
         ),
         vscode.commands.registerCommand("voxelcore.runQuickWorld", runQuickWorld),
+        vscode.commands.registerCommand("voxelcore.runProject", runProject),
         vscode.commands.registerCommand("voxelcore.runHeadlessScript", runHeadlessScript),
         vscode.commands.registerCommand("voxelcore.prepareUserDir", async () => {
             const env = await resolveEnvironment(true);
@@ -207,7 +213,15 @@ async function buildArgs(def: VoxelCoreTaskDefinition, env: Environment, packs: 
         args.push("--headless", "--script", resolveVariables(def.script));
     }
     args.push(...(def.args ?? []));
+    const project = projectOf(def);
+    if (project) args.push("--project", project);
+    // everything after a bare `--` is a project argument (command_line.cpp)
+    if (def.projectArgs?.length) args.push("--", ...def.projectArgs);
     return args;
+}
+
+function projectOf(def: VoxelCoreTaskDefinition): string | undefined {
+    return def.project ? path.resolve(resolveVariables(def.project)) : undefined;
 }
 
 /** First generator of a workspace pack, else base:demo. */
@@ -259,6 +273,28 @@ async function runQuickWorld() {
     );
 }
 
+/** Runs a workspace project as it is: `--project <dir>`, its own start.lua and project_client.lua. */
+async function runProject(arg?: unknown) {
+    // from a project node in the content explorer
+    let root = (arg as { project?: { project?: { root?: unknown } } } | undefined)?.project?.project?.root;
+    if (typeof root !== "string") {
+        const projects = workspaceIndex.get().lintableProjects().filter((p) => !p.builtin);
+        if (!projects.length) {
+            vscode.window.showWarningMessage("No VoxelCore project (a folder with a project.toml) in this workspace.");
+            return;
+        }
+        const picked = projects.length === 1 ? projects[0] : (await vscode.window.showQuickPick(
+            projects.map((p) => ({ label: p.title ?? p.name ?? path.basename(p.root), description: p.root, project: p })),
+            { title: "Project to run" }
+        ))?.project;
+        root = picked?.root;
+    }
+    if (typeof root !== "string") return;
+    await vscode.tasks.executeTask(
+        createTask({ type: TASK_TYPE, action: "run", project: root }, `Run project: ${path.basename(root)}`)
+    );
+}
+
 async function runHeadlessScript(uri?: vscode.Uri) {
     const file = uri ?? vscode.window.activeTextEditor?.document.uri;
     if (!file || !file.fsPath.endsWith(".lua")) {
@@ -279,6 +315,8 @@ export interface PreparedEngine {
     script?: string;
     /** Dev bridge requests are served (quick world). */
     bridge: boolean;
+    /** The project folder (`--project`), if any. */
+    project?: string;
 }
 
 /** Links the packs and builds the command line (tasks and debug launches). */
@@ -289,11 +327,14 @@ export async function prepareEngine(def: VoxelCoreTaskDefinition, dev: DevOption
     if (dev.waitForDebugger) clearDebuggerReady(env.userDir);
     const args = await buildArgs(def, env, packs, dev);
     if (!args) return undefined;
-    return { executable: env.executable, args, userDir: env.userDir, packs, script: scriptOf(args), bridge: def.action === "quickWorld" && !!dev.bridge };
+    return {
+        executable: env.executable, args, userDir: env.userDir, packs, script: scriptOf(args),
+        bridge: def.action === "quickWorld" && !!dev.bridge, project: projectOf(def),
+    };
 }
 
 export function startEngineSession(prepared: PreparedEngine) {
-    return log.startSession({ userDir: prepared.userDir, script: prepared.script });
+    return log.startSession({ userDir: prepared.userDir, script: prepared.script, project: prepared.project });
 }
 
 export function hotReloadEnabled(): boolean {

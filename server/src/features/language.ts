@@ -9,7 +9,7 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { findNodeAtLocation, findNodeAtOffset, getLocation, parseTree } from "jsonc-parser";
 import { sanitizeJson } from "../../../shared/content/json";
-import { parseLocale } from "../../../shared/content/locale";
+import { parseLocale, translations } from "../../../shared/content/locale";
 import { fileRole } from "../linter";
 import { LintEnv } from "../rules/context";
 import { scriptRole } from "../lua/analyze";
@@ -18,6 +18,14 @@ import { fileToUri } from "../uri";
 import { REF_LABEL, RefKind, candidates, displayPath, jsonStringAt, luaStringAt, resolveRef } from "./refs";
 import { VcmLang, vcmCompletions, vcmHover, vcmOutline } from "./vcm";
 import { modelHover, soundHover, textureFacesHover, textureHover, translationsHover } from "./assets";
+import { layoutCompletions, layoutHover, layoutKeyAt, layoutSymbols } from "./layout";
+import { bindingNames, preloadedFonts, preloadedTextures } from "./layoutAssets";
+import { layoutRefs } from "./references";
+import { layoutAttribute } from "../../../shared/layouts";
+import { layoutContextAt } from "../../../shared/layouts/xml";
+import { callbackCompletions, layoutDefinition } from "./layoutLua";
+import { engineGlobals } from "../lua/globals";
+import { documentIdCompletions, documentIdDefinition, documentIdHover } from "./layoutDocument";
 
 const JSON_ROLES = new Set(["block", "item", "entity", "material", "skeleton", "preload"]);
 
@@ -73,6 +81,37 @@ export function complete(env: LintEnv, doc: TextDocument, file: string, offset: 
         }));
     }
     const { pack, role } = fileRole(env.index, file);
+    if (role === "layout") {
+        // texture / model / layout names inside a value
+        const ctx = layoutContextAt(text, offset);
+        const type = ctx.kind === "value" ? layoutAttribute(ctx.tag, ctx.attribute)?.type : undefined;
+        if (ctx.kind === "value" && (type === "texture" || type === "model" || type === "layout")) {
+            let end = offset;
+            while (end < text.length && text[end] !== ctx.quote && text[end] !== "\n") end++;
+            const r = range(doc, ctx.start, end);
+            if (type !== "texture") return refItems(env, type, pack?.id, r, "");
+            // loaded textures by name, and atlas regions
+            const loaded = preloadedTextures(env.index);
+            return [
+                ...refItems(env, "texturePath", pack?.id, r, "").filter((i) => loaded.has(String(i.label))),
+                ...refItems(env, "atlasTexture", pack?.id, r, ""),
+            ];
+        }
+        // loaded fonts, defined bindings
+        if (ctx.kind === "value" && (type === "font" || type === "binding")) {
+            let end = offset;
+            while (end < text.length && text[end] !== ctx.quote && text[end] !== "\n") end++;
+            const r = range(doc, ctx.start, end);
+            const names = type === "font" ? preloadedFonts(env.index) : bindingNames(env.index);
+            return [...names].sort().map((name) => ({ label: name, kind: CompletionItemKind.Value, detail: type, textEdit: TextEdit.replace(r, name) }));
+        }
+        // Lua callbacks: the layout script's functions, engine names
+        const lua = ctx.kind === "value" ? layoutAttribute(ctx.tag, ctx.attribute)?.lua : undefined;
+        if (ctx.kind === "value" && lua) {
+            return callbackCompletions(text, file, offset, ctx.attribute, lua, ctx.start, engineGlobals(env.index.resPath), (s, e) => range(doc, s, e));
+        }
+        return layoutCompletions(doc, offset);
+    }
     if (JSON_ROLES.has(role)) {
         const at = jsonStringAt(role, text, offset);
         if (!at) return [];
@@ -80,11 +119,14 @@ export function complete(env: LintEnv, doc: TextDocument, file: string, offset: 
         return refItems(env, at.kind, pack?.id, r, '"');
     }
     if (role === "lua") {
+        // document.<id> in a layout script
+        const ids = documentIdCompletions(doc, file, offset);
+        if (ids) return ids;
         const str = luaStringAt(text, offset);
         if (str) {
             return refItems(env, str.kind, pack?.id, range(doc, str.start, str.end), "");
         }
-        if (!pack) return [];
+        if (!pack && !env.index.projectFile(file)) return [];
         const lineStart = text.lastIndexOf("\n", offset - 1) + 1;
         const prefix = text.slice(lineStart, offset);
         const kind = scriptRole(env.index, pack, file).kind;
@@ -187,6 +229,17 @@ export function hover(env: LintEnv, doc: TextDocument, file: string, offset: num
         }
         return markdown(h.markdown, h.start, h.end);
     }
+    if (role === "layout") {
+        const key = layoutKeyAt(text, offset);
+        if (key) {
+            // langs::get: `context.key` first, then `key`
+            const withContext = key.context ? `${key.context}.${key.key}` : undefined;
+            const lookup = withContext && translations(env.index, withContext).length ? withContext : key.key;
+            const head = key.context ? `\`@${key.key}\` in context \`${key.context}\` → key \`${lookup}\`\n\n` : "";
+            return markdown(head + translationsHover(env.index, lookup), key.start, key.end);
+        }
+        if (!layoutRefs(text).some((r) => offset >= r.start && offset <= r.end)) return layoutHover(doc, offset);
+    }
     if (role === "locale") {
         const entry = parseLocale(text).entries.find((e) => offset >= e.keyStart && offset <= e.valueEnd);
         if (!entry) return null;
@@ -196,7 +249,10 @@ export function hover(env: LintEnv, doc: TextDocument, file: string, offset: num
     let value = "";
     let start = offset;
     let end = offset;
-    if (JSON_ROLES.has(role)) {
+    if (role === "layout") {
+        // a texture / model / layout name (FEATURES.md §3.9)
+        ({ kind, value, start, end } = layoutRefs(text).find((r) => offset >= r.start && offset <= r.end)!);
+    } else if (JSON_ROLES.has(role)) {
         if (role === "block") {
             const faces = textureFacesAt(env, text, offset, pack?.id);
             if (faces && (getLocation(sanitizeJson(text), offset).isAtPropertyKey || !jsonStringAt(role, text, offset)?.node)) {
@@ -212,6 +268,8 @@ export function hover(env: LintEnv, doc: TextDocument, file: string, offset: num
         start = at.node.offset;
         end = at.node.offset + at.node.length;
     } else if (role === "lua") {
+        const id = documentIdHover(text, file, offset);
+        if (id) return markdown(id.markdown, id.start, id.end);
         const str = luaStringAt(text, offset);
         if (!str) {
             const key = guiStrAt(text, offset);
@@ -238,6 +296,18 @@ export function definition(env: LintEnv, doc: TextDocument, file: string, offset
     const lang = langOf(file);
     const { pack, role } = fileRole(env.index, file);
     let target: string | undefined;
+    if (role === "layout") {
+        const ref = layoutRefs(text).find((r) => offset >= r.start && offset <= r.end);
+        if (ref) {
+            const resolved = resolveRef(env.index, ref.kind, ref.value, pack?.id);
+            return resolved && fs.existsSync(resolved) ? [{ uri: fileToUri(resolved), range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } }] : [];
+        }
+        // a callback's function in the layout's .xml.lua
+        const def = layoutDefinition(text, file, offset);
+        if (!def) return [];
+        const script = TextDocument.create(fileToUri(def.file), "lua", 0, fs.readFileSync(def.file, "utf8"));
+        return [{ uri: fileToUri(def.file), range: range(script, def.start, def.end) }];
+    }
     if (lang) {
         const h = vcmHover(lang, text, offset);
         if (h?.attribute?.name === "texture" && !h.attribute.value.startsWith("$")) {
@@ -247,8 +317,18 @@ export function definition(env: LintEnv, doc: TextDocument, file: string, offset
         const at = jsonStringAt(role, text, offset);
         if (at?.node) target = resolveRef(env.index, at.kind, at.value, pack?.id);
     } else if (role === "lua") {
+        const id = documentIdDefinition(text, file, offset);
+        if (id) {
+            const layout = TextDocument.create(fileToUri(id.file), "xml", 0, id.text);
+            return [{ uri: fileToUri(id.file), range: range(layout, id.start, id.end) }];
+        }
         const str = luaStringAt(text, offset);
         if (str) target = resolveRef(env.index, str.kind, str.value, pack?.id);
+        // project scripts: bare and `project:` modules are <project>/modules/<name>.lua
+        const project = env.index.projectFile(file)?.project;
+        if (str?.kind === "module" && project && (!str.value.includes(":") || str.value.startsWith("project:"))) {
+            target = path.join(project.root, "modules", str.value.replace(/^project:/, "") + ".lua");
+        }
     }
     if (!target || !fs.existsSync(target)) return [];
     return [{ uri: fileToUri(target), range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } }];
@@ -290,6 +370,7 @@ function localeSymbols(doc: TextDocument): DocumentSymbol[] {
 
 export function documentSymbols(doc: TextDocument, file: string): DocumentSymbol[] {
     if (/[\\/]texts[\\/][^\\/]+\.txt$/i.test(file)) return localeSymbols(doc);
+    if (/[\\/]layouts[\\/].+\.xml$/i.test(file)) return layoutSymbols(doc);
     const lang = langOf(file);
     if (!lang) return [];
     const kindOf: Record<string, SymbolKind> = {

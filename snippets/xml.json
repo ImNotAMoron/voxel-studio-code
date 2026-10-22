@@ -1,0 +1,81 @@
+{
+    "VoxelCore layout": {
+        "prefix": "vc-layout",
+        "description": "A layout root: a centred container with a vertical panel (layouts/<name>.xml)",
+        "body": [
+            "<container size=\"${1:400,300}\" color=\"${2:#00000080}\" gravity=\"${3|center-center,top-left,top-center,top-right,center-left,center-right,bottom-left,bottom-center,bottom-right|}\">",
+            "\t<panel pos=\"${4:10,10}\" size=\"${5:380,280}\" interval=\"${6:4}\" padding=\"${7:4}\">",
+            "\t\t$0",
+            "\t</panel>",
+            "</container>"
+        ]
+    },
+    "VoxelCore inventory layout": {
+        "prefix": "vc-inventory",
+        "description": "An inventory with a slot grid (a block's ui-layout, inventory-size > 0)",
+        "body": [
+            "<inventory color=\"${1:#1F1F1FE0}\">",
+            "\t<slots-grid rows=\"${2:3}\" cols=\"${3:3}\" count=\"${4:9}\" start-index=\"${5:0}\"/>$0",
+            "</inventory>"
+        ]
+    },
+    "VoxelCore slots grid": {
+        "prefix": "vc-slots-grid",
+        "description": "A grid of inventory slots (inside <inventory>; give two of rows, cols, count)",
+        "body": "<slots-grid rows=\"${1:1}\" cols=\"${2:9}\" start-index=\"${3:0}\"/>"
+    },
+    "VoxelCore slot": {
+        "prefix": "vc-slot",
+        "description": "One inventory slot (inside <inventory>)",
+        "body": "<slot index=\"${1:0}\" pos=\"${2:0,0}\"/>"
+    },
+    "VoxelCore panel": {
+        "prefix": "vc-panel",
+        "description": "A panel that stacks its children",
+        "body": [
+            "<panel orientation=\"${1|vertical,horizontal|}\" interval=\"${2:4}\" padding=\"${3:4}\">",
+            "\t$0",
+            "</panel>"
+        ]
+    },
+    "VoxelCore button": {
+        "prefix": "vc-button",
+        "description": "A button; onclick is Lua code (call a function of the layout script)",
+        "body": "<button onclick=\"${1:on_click}()\">${2:@Text}</button>"
+    },
+    "VoxelCore label": {
+        "prefix": "vc-label",
+        "description": "A label; @key texts are translated",
+        "body": "<label${1: id=\"${2:title}\"}>${3:@Text}</label>"
+    },
+    "VoxelCore image": {
+        "prefix": "vc-image",
+        "description": "An image: a preloaded texture name or atlas:name",
+        "body": "<image src=\"${1:gui/info}\" size=\"${2:32,32}\"/>"
+    },
+    "VoxelCore textbox": {
+        "prefix": "vc-textbox",
+        "description": "A text field; consumer gets the text when editing ends",
+        "body": "<textbox id=\"${1:input}\" hint=\"${2:@Hint}\" consumer=\"function(text) $3 end\"/>"
+    },
+    "VoxelCore checkbox": {
+        "prefix": "vc-checkbox",
+        "description": "A checkbox; consumer gets true/false",
+        "body": "<checkbox checked=\"${1|false,true|}\" consumer=\"function(checked) $2 end\">${3:@Text}</checkbox>"
+    },
+    "VoxelCore trackbar": {
+        "prefix": "vc-trackbar",
+        "description": "A slider; consumer gets the value",
+        "body": "<trackbar min=\"${1:0}\" max=\"${2:100}\" step=\"${3:1}\" value=\"${4:50}\" consumer=\"function(value) $5 end\"/>"
+    },
+    "VoxelCore select": {
+        "prefix": "vc-select",
+        "description": "A drop-down list; onselect gets the option value",
+        "body": [
+            "<select selected=\"${1:a}\" width=\"${2:200}\" onselect=\"function(value) $3 end\">",
+            "\t<option value=\"a\">${4:@A}</option>",
+            "\t<option value=\"b\">${5:@B}</option>",
+            "</select>"
+        ]
+    }
+}

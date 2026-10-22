@@ -99,6 +99,30 @@ const rules: RuleInfo[] = [
     { id: "VC0302", severity: "warning", title: "locale file for an unknown language", doc: "res/texts/langs.json" },
     { id: "VC0303", severity: "hint", title: "keys missing compared to the pack's other languages", doc: "src/frontend/locale.cpp" },
     { id: "VC0304", severity: "hint", title: "caption without a translation", doc: "src/util/stringutil.cpp" },
+    // XML UI layouts (layouts/**/*.xml)
+    { id: "VC0400", severity: "error", title: "layout XML parse error", doc: "src/coders/xml.cpp" },
+    { id: "VC0401", severity: "error", title: "unsupported layout element", doc: "doc/en/xml-ui-layouts.md" },
+    { id: "VC0402", severity: "warning", title: "attribute the element doesn't read", doc: "doc/en/xml-ui-layouts.md" },
+    { id: "VC0403", severity: "warning", title: "ignored child element or text", doc: "src/graphics/ui/gui_xml.cpp" },
+    { id: "VC0404", severity: "warning", title: "repeated attribute", doc: "src/coders/xml.cpp" },
+    { id: "VC0405", severity: "error", title: "attribute value the engine can't read", doc: "src/coders/xml.cpp" },
+    { id: "VC0406", severity: "warning", title: "unknown attribute value", doc: "doc/en/xml-ui-layouts.md" },
+    { id: "VC0407", severity: "warning", title: "attribute value read differently than written", doc: "src/coders/xml.cpp" },
+    { id: "VC0408", severity: "warning", title: "duplicate or reserved element id", doc: "src/graphics/ui/elements/UINode.cpp" },
+    { id: "VC0410", severity: "warning", title: "Lua syntax error in a layout callback", doc: "src/logic/scripting/scripting_functional.cpp" },
+    { id: "VC0411", severity: "warning", title: "layout callback uses an undefined name", doc: "doc/en/xml-ui-layouts.md" },
+    { id: "VC0412", severity: "warning", title: "layout names a missing texture, model or layout", doc: "doc/en/xml-ui-layouts.md" },
+    { id: "VC0413", severity: "hint", title: "image texture isn't preloaded", doc: "doc/en/resources.md" },
+    { id: "VC0414", severity: "error", title: "unknown input binding", doc: "src/window/input.cpp" },
+    { id: "VC0415", severity: "warning", title: "select value no option has", doc: "doc/en/xml-ui-layouts.md" },
+    { id: "VC0416", severity: "warning", title: "font that isn't loaded", doc: "doc/en/resources.md" },
+    { id: "VC0409", severity: "hint", title: "root element id is replaced by root", doc: "src/frontend/UiDocument.cpp" },
+    // projects (project.toml, start.lua, project_client.lua)
+    { id: "VC0500", severity: "warning", title: "unknown project permission", doc: "src/devtools/Project.hpp" },
+    { id: "VC0501", severity: "warning", title: "base pack not found", doc: "src/content/ContentControl.cpp" },
+    { id: "VC0502", severity: "hint", title: "base pack outside the project's content sources", doc: "doc/en/content-packs.md" },
+    { id: "VC0503", severity: "warning", title: "call needs a project permission", doc: "src/devtools/Project.hpp" },
+    { id: "VC0504", severity: "error", title: "bare require in project_client.lua", doc: "src/logic/scripting/scripting.cpp" },
 ];
 
 export const RULES = new Map(rules.map((r) => [r.id, r]));

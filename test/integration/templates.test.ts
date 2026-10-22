@@ -50,3 +50,46 @@ test("pack manifests are told apart from npm manifests", () => {
     assert.equal(parsePackManifest('{"id":"x","dependencies":{"a":"1"}}'), undefined);
     assert.equal(parsePackManifest("not json"), undefined);
 });
+
+test("layout templates lint clean, with every callback defined in the script", async () => {
+    const { ContentIndex } = await import("../../shared/content/index");
+    const { createEnv, lintDocument } = await import("../../server/src/linter");
+    const { GOODPACK, RES } = await import("../server/helpers");
+    const path = await import("node:path");
+    const env = createEnv(new ContentIndex({ resPath: RES, packDirs: [GOODPACK] }), {}, false);
+    for (const kind of ["screen", "inventory", "empty"] as t.LayoutKind[]) {
+        // linted where no .xml.lua exists: names may only be undefined if the template's script defines them
+        const defined = new Set([...t.layoutScript(kind).matchAll(/^function (\w+)/gm)].map((m) => m[1]));
+        const noisy = lintDocument(env, path.join(GOODPACK, "layouts", "test.xml"), t.layoutXml(kind))
+            .filter((d) => !(d.code === "VC0411" && defined.has(/'(\w+)'/.exec(d.message)?.[1] ?? "")));
+        assert.deepEqual(noisy.map((d) => `${d.code} ${d.message}`), [], kind);
+    }
+});
+
+test("project templates lint clean and parse like Project::deserialize", async () => {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const { ContentIndex, projectFields } = await import("../../shared/content/index");
+    const { parse } = await import("smol-toml");
+    const { createEnv, lintProjectFiles } = await import("../../server/src/linter");
+    const { RES } = await import("../server/helpers");
+    const toml = t.projectToml({ name: "my_game", title: "My Game", basePacks: ["base"], permissions: ["network", "debugging"] });
+    assert.deepEqual(projectFields(parse(toml) as Record<string, unknown>), {
+        name: "my_game", title: "My Game", basePacks: ["base"], permissions: ["network", "debugging"],
+    });
+    assert.deepEqual(projectFields(parse(t.projectToml({ name: "x", title: "X", basePacks: [], permissions: [] })) as Record<string, unknown>).permissions, []);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vc-project-"));
+    try {
+        fs.writeFileSync(path.join(dir, "project.toml"), toml);
+        fs.writeFileSync(path.join(dir, "project_client.lua"), t.projectClientScript());
+        fs.writeFileSync(path.join(dir, "start.lua"), t.projectStartScript());
+        const index = new ContentIndex({ resPath: RES, roots: [dir] });
+        const [project] = index.lintableProjects();
+        assert.ok(project.clientScript && project.startScript);
+        const noisy = [...lintProjectFiles(createEnv(index, {}, false), project).values()].flat();
+        assert.deepEqual(noisy.map((d) => `${d.code} ${d.message}`), []);
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+});

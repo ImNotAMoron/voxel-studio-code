@@ -2,11 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { ContentIndex } from "../../shared/content/index";
+import { ContentIndex, grantPermissionEdit } from "../../shared/content/index";
 import { createEnv, lintDocument } from "../../server/src/linter";
 import { RULES } from "../../server/src/rules/registry";
 import { checkVcaExpression } from "../../server/src/rules/vcm";
-import { BACKROOMS, BASE, ERRPACK, FIXTURES, GOODPACK, RES, describe, lintDirs, rel } from "./helpers";
+import { BACKROOMS, BASE, ERRPACK, FIXTURES, GOODPACK, RES, describe, lintDirs, lintProjectDir, rel } from "./helpers";
 
 const err = lintDirs([ERRPACK, path.join(FIXTURES, "badid"), path.join(FIXTURES, "reserved")]);
 const good = lintDirs([GOODPACK]);
@@ -128,14 +128,114 @@ const EXPECTED: [string, string, RegExp?][] = [
     ["VC0302", "errpack/texts/xx_XX.txt", /never loaded/],
     ["VC0303", "errpack/texts/ru_RU.txt", /'only_de'/],
     ["VC0304", "errpack/texts/ru_RU.txt", /'bad'/],
+    ["VC0400", "errpack/layouts/broken.xml", /string literal expected/],
+    ["VC0401", "errpack/layouts/bad.xml", /'buton'.*did you mean <button>/],
+    ["VC0401", "errpack/layouts/bad.xml", /<option> is only read inside <select>/],
+    ["VC0402", "errpack/layouts/bad.xml", /'orientaton'.*did you mean 'orientation'/],
+    ["VC0402", "errpack/layouts/bad.xml", /<container> doesn't read 'interval'.*only <panel>/],
+    ["VC0403", "errpack/layouts/bad.xml", /<image> is ignored: <label> doesn't read child elements/],
+    ["VC0403", "errpack/layouts/bad.xml", /<label> is ignored: <select> reads only <option>/],
+    ["VC0403", "errpack/layouts/bad.xml", /this text is ignored: <panel>/],
+    ["VC0403", "errpack/layouts/bad.xml", /<slots-grid> is ignored here/],
+    ["VC0404", "errpack/layouts/bad.xml", /'id' is set again/],
+    ["VC0405", "errpack/layouts/values.xml", /margin: invalid vec4 value/],
+    ["VC0405", "errpack/layouts/values.xml", /tooltip-delay: 'soon' isn't a number/],
+    ["VC0405", "errpack/layouts/values.xml", /track-width: an empty value isn't an integer/],
+    ["VC0405", "errpack/layouts/values.xml", /color: a numeric colour needs r,g,b,a/],
+    ["VC0405", "errpack/layouts/values.xml", /color: #RRGGBB or #RRGGBBAA required/],
+    ["VC0406", "errpack/layouts/values.xml", /orientation: 'Horizontal'.*did you mean 'horizontal'/],
+    ["VC0406", "errpack/layouts/values.xml", /gravity: 'center'.*no automatic positioning/],
+    ["VC0406", "errpack/layouts/values.xml", /syntax: 'python'/],
+    ["VC0407", "errpack/layouts/values.xml", /size: read as vec2 100 for all components/],
+    ["VC0407", "errpack/layouts/values.xml", /padding: more than 4 numbers: the engine ignores '5'/],
+    ["VC0407", "errpack/layouts/values.xml", /'G' isn't a hex digit/],
+    ["VC0407", "errpack/layouts/values.xml", /visible: 'yes' counts as false/],
+    ["VC0407", "errpack/layouts/values.xml", /interactive: without a value this is false/],
+    ["VC0407", "errpack/layouts/values.xml", /z-index: read as 1/],
+    ["VC0408", "errpack/layouts/values.xml", /id 'a' is already used on line 2/],
+    ["VC0408", "errpack/layouts/values.xml", /id 'dup'.*aren't indexed either \('lost'\)/],
+    ["VC0408", "errpack/layouts/values.xml", /'root' is the layout's root element/],
+    ["VC0409", "errpack/layouts/values.xml", /use document\.root, not document\.screen/],
+    ["VC0410", "errpack/layouts/callbacks.xml", /onclick is run as Lua statements, and 'refresh' alone isn't one.*refresh\(\)/],
+    ["VC0410", "errpack/layouts/callbacks.xml", /supplier is evaluated as 'return 'count: ' \.\.'/],
+    ["VC0411", "errpack/layouts/callbacks.xml", /'save_setting' isn't defined in callbacks\.xml\.lua/],
+    ["VC0412", "errpack/layouts/names.xml", /texture 'gui\/nope' not found.*plain rectangle/],
+    ["VC0412", "errpack/layouts/names.xml", /texture 'blocks:nope' not found/],
+    ["VC0412", "errpack/layouts/names.xml", /no 'atlasx' atlas/],
+    ["VC0412", "errpack/layouts/names.xml", /model 'no_such_model' not found/],
+    ["VC0412", "errpack/layouts/names.xml", /layout 'errpack:no_layout' not found/],
+    ["VC0412", "errpack/layouts/names.xml", /a layout id is 'pack:name'/],
+    ["VC0413", "errpack/layouts/names.xml", /'gui\/unloaded' isn't in the textures of any preload\.json/],
+    ["VC0415", "errpack/layouts/names.xml", /no <option> has the value 'tow'.*did you mean 'two'/],
+    ["VC0416", "errpack/layouts/names.xml", /font 'bold' isn't loaded \(preload\.json fonts: normal\)/],
+    ["VC0414", "errpack/layouts/names.xml", /binding 'movement\.forwad' does not exist.*did you mean 'movement\.forward'/],
 ];
 
 for (const [code, file, pattern] of EXPECTED) {
     test(`${code} fires: ${file}${pattern ? " " + pattern : ""}`, () => has(code, file, pattern));
 }
 
+// projects: errproject (goodpack is a base pack outside its content sources)
+const proj = lintProjectDir(path.join(FIXTURES, "errproject"), [GOODPACK]);
+const PROJECT_EXPECTED: [string, string, RegExp][] = [
+    ["VC0500", "errproject/project.toml", /unknown permission 'netwrk'.*Did you mean 'network'/],
+    ["VC0501", "errproject/project.toml", /base pack 'nosuchbase' not found in errproject\/content or res\/content/],
+    ["VC0502", "errproject/project.toml", /base pack 'goodpack' is outside this project's content sources/],
+    ["VC0503", "errproject/start.lua", /'network\.get' needs the project permission 'network'/],
+    ["VC0503", "errproject/start.lua", /'file\.write' needs the project permission 'write-to-user'/],
+    ["VC0503", "errproject/start.lua", /'app\.start_debug_instance' needs the project permission 'debugging'/],
+    ["VC0503", "errproject/content/projpack/scripts/world.lua", /'app\.start_background_instance' needs .*'sub-instances'/],
+    ["VC0504", "errproject/project_client.lua", /require 'helper' fails in project_client\.lua.*use 'project:helper'/],
+    ["VC0103", "errproject/start.lua", /module 'no_such_module' not found \(errproject\/modules\/no_such_module\.lua\)/],
+    ["VC0101", "errproject/project_client.lua", /'on_menu_stup'.*project client script.*Did you mean 'on_menu_setup'/],
+];
+
+for (const [code, file, pattern] of PROJECT_EXPECTED) {
+    test(`${code} fires: ${file} ${pattern}`, () => {
+        assert.ok(proj.diagnostics.some((d) => d.code === code && rel(d.file) === file && pattern.test(d.message)),
+            `expected ${code} in ${file} matching ${pattern}\n` + proj.diagnostics.filter((d) => rel(d.file) === file).map(describe).join("\n"));
+    });
+}
+
+test("projects: no false positives in errproject", () => {
+    const codes = (file: string) => proj.diagnostics.filter((d) => rel(d.file) === file).map((d) => `${d.code} ${d.message}`);
+    // resolved requires, network.is_available, world: writes, granted record-audio, base packs found
+    assert.equal(codes("errproject/start.lua").length, 4, codes("errproject/start.lua").join("\n"));
+    assert.equal(codes("errproject/project_client.lua").length, 2, codes("errproject/project_client.lua").join("\n"));
+    assert.equal(codes("errproject/project.toml").length, 3, codes("errproject/project.toml").join("\n"));
+});
+
+test("res/project (the engine's default project) is clean", () => {
+    const res = lintProjectDir(path.join(RES, "project"));
+    assert.equal(res.index.projects.find((p) => p.root === path.join(RES, "project"))?.builtin, true);
+    assert.deepEqual(res.diagnostics.map(describe), []);
+});
+
+test("project index: fields, scripts, content packs", () => {
+    const project = proj.index.projects.find((p) => p.name === "errproject")!;
+    assert.deepEqual(project.basePacks, ["base", "projpack", "nosuchbase", "goodpack"]);
+    assert.deepEqual(project.permissions, ["record-audio", "netwrk"]);
+    assert.ok(project.startScript && project.clientScript);
+    assert.equal(proj.index.projectOfPack(proj.index.packs.get("projpack")!), project);
+    assert.equal(proj.index.projectOfPack(proj.index.packs.get("goodpack")!), undefined);
+    assert.equal(proj.index.projectFile(path.join(project.root, "start.lua"))?.kind, "start");
+    assert.equal(proj.index.projectFile(path.join(project.root, "modules", "helper.lua")), undefined);
+});
+
+test("grant permission edit", () => {
+    const apply = (text: string, perm: string) => {
+        const [s, e, t] = grantPermissionEdit(text, perm);
+        return text.slice(0, s) + t + text.slice(e);
+    };
+    assert.equal(apply('name = "x"\npermissions = []\n', "network"), 'name = "x"\npermissions = ["network"]\n');
+    assert.equal(apply('permissions = ["a", ]\n', "network"), 'permissions = ["a", "network"]\n');
+    assert.equal(apply('permissions = [\n    "a",\n]\n', "network"), 'permissions = [\n    "a",\n    "network"\n]\n');
+    assert.equal(apply('name = "x"', "network"), 'name = "x"\npermissions = ["network"]\n');
+    assert.equal(apply('name = "x"\n[extra]\nk = 1\n', "debugging"), 'name = "x"\npermissions = ["debugging"]\n[extra]\nk = 1\n');
+});
+
 test("every rule has a positive fixture", () => {
-    const covered = new Set(EXPECTED.map(([code]) => code));
+    const covered = new Set([...EXPECTED, ...PROJECT_EXPECTED].map(([code]) => code));
     covered.add("VC0012"); // goodpack/_draft.json (below)
     covered.add("VC0013"); // content.json (below)
     const missing = [...RULES.keys()].filter((id) => !covered.has(id));
@@ -215,3 +315,29 @@ for (const [name, dir] of [["base", BASE], ["backrooms", BACKROOMS]] as const) {
         for (const d of diagnostics) assert.ok(["VC0006", "VC0060", "VC0061", "VC0062", "VC0063", "VC0012", "VC0208", "VC0304"].includes(d.code), describe(d));
     });
 }
+
+test("the engine's own layouts (res/layouts) lint clean apart from real findings", () => {
+    const index = new ContentIndex({ resPath: RES, packDirs: [] });
+    const env = createEnv(index, {}, false);
+    const found: string[] = [];
+    const walk = (dir: string) => {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+            const p = path.join(dir, e.name);
+            if (e.isDirectory()) walk(p);
+            else if (p.endsWith(".xml")) {
+                for (const d of lintDocument(env, p, fs.readFileSync(p, "utf8"))) found.push(`${path.relative(RES, p).replaceAll("\\", "/")} ${d.code} ${d.message}`);
+            }
+        }
+    };
+    walk(path.join(RES, "layouts"));
+    // all real (ENGINE_NOTES.md): interval on a <container>, which doesn't read it;
+    // three elements with id "move_left"; code_editor's root id is replaced by "root"
+    assert.deepEqual(found, [
+        "layouts/code_editor.xml VC0409 the engine renames the root element to 'root': use document.root, not document.editorRoot",
+        "layouts/pages/content.xml VC0402 <container> doesn't read 'interval'; the engine ignores it silently (only <panel>, <slots-grid> read it)",
+        "layouts/pages/content.xml VC0408 id 'move_left' is already used on line 6: document.move_left is that element",
+        "layouts/pages/content.xml VC0408 id 'move_left' is already used on line 6: document.move_left is that element",
+        "layouts/pages/content_menu.xml VC0402 <container> doesn't read 'interval'; the engine ignores it silently (only <panel>, <slots-grid> read it)",
+        "layouts/templates/binding.xml VC0412 src: texture 'gui/left_half_block' not found (textures/gui/left_half_block.png in no pack): the image is drawn as a plain rectangle of its color (Batch2D blank texture)",
+    ]);
+});

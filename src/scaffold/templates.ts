@@ -173,6 +173,53 @@ export function worldScript(): string {
     ].join("\n");
 }
 
+export interface ProjectInput {
+    name: string;
+    title: string;
+    basePacks: string[];
+    permissions: string[];
+}
+
+/** project.toml with the keys Project::deserialize reads. */
+export function projectToml(info: ProjectInput): string {
+    const list = (items: string[]) => (items.length ? `[\n${items.map((i) => `    ${JSON.stringify(i)},`).join("\n")}\n]` : "[]");
+    return [
+        `name = ${JSON.stringify(info.name)}`,
+        `title = ${JSON.stringify(info.title)}`,
+        `base_packs = ${list(info.basePacks)}`,
+        `permissions = ${list(info.permissions)}`,
+        "",
+    ].join("\n");
+}
+
+/** The client script; like res/project, it shows the main menu (nothing else does). */
+export function projectClientScript(): string {
+    return [
+        "-- Loaded on clients (not headless). on_<screen>_setup / on_<screen>_clear",
+        "-- run when the menu or level screen is shown or replaced.",
+        "-- Modules: require \"project:name\" loads modules/name.lua (a bare name fails here).",
+        "",
+        "function on_menu_setup()",
+        "    menu.page = \"main\"",
+        "    menu.visible = true",
+        "end",
+        "",
+        "function on_menu_clear()",
+        "end",
+        "",
+    ].join("\n");
+}
+
+export function projectStartScript(): string {
+    return [
+        "-- App script: runs at start-up as a coroutine with the `app` library.",
+        "-- A --script run (the extension's Quick World and debug runs) replaces it.",
+        "-- app.tick() / app.sleep(seconds) wait for frames; app.quit() exits.",
+        "-- Headless, it stops at its first wait unless it is also the --script.",
+        "",
+    ].join("\n");
+}
+
 export function packGitignore(): string {
     return "content.json\n";
 }
@@ -214,4 +261,63 @@ function hsl(h: number, s: number, l: number): [number, number, number] {
     const a = s * Math.min(l, 1 - l);
     const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
     return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+
+export type LayoutKind = "screen" | "inventory" | "empty";
+
+/** layouts/<name>.xml. Every callback it names is defined by layoutScript(kind). */
+export function layoutXml(kind: LayoutKind): string {
+    switch (kind) {
+        case "screen":
+            return [
+                '<container size="400,300" color="#00000080" gravity="center-center">',
+                '    <panel pos="10,10" size="380,280" interval="4" padding="4">',
+                '        <label id="title">Title</label>',
+                '        <button onclick="on_ok()">OK</button>',
+                "    </panel>",
+                "</container>",
+                "",
+            ].join("\n");
+        case "inventory":
+            return [
+                '<inventory color="#1F1F1FE0">',
+                '    <slots-grid rows="3" cols="3" count="9" sharefunc="on_share"/>',
+                "</inventory>",
+                "",
+            ].join("\n");
+        case "empty":
+            return '<container size="400,300">\n</container>\n';
+    }
+}
+
+/** layouts/<name>.xml.lua: the layout's events and the callbacks layoutXml(kind) uses. */
+export function layoutScript(kind: LayoutKind): string {
+    switch (kind) {
+        case "screen":
+            return [
+                "function on_open()",
+                '    document.title.text = "Title"',
+                "end",
+                "",
+                "function on_ok()",
+                "end",
+                "",
+            ].join("\n");
+        case "inventory":
+            return [
+                "-- a block's ui-layout: x, y, z is the block",
+                "function on_open(invid, x, y, z)",
+                "end",
+                "",
+                "function on_close(invid)",
+                "end",
+                "",
+                "-- Shift + left click on a slot",
+                "function on_share(invid, slot)",
+                "end",
+                "",
+            ].join("\n");
+        case "empty":
+            return "function on_open()\nend\n";
+    }
 }

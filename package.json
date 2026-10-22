@@ -47,7 +47,8 @@
     "onView:voxelcore.engine",
     "onDebugResolve:voxelcore",
     "onDebugDynamicConfigurations:voxelcore",
-    "onDebugInitialConfigurations"
+    "onDebugInitialConfigurations",
+    "workspaceContains:**/project.toml"
   ],
   "contributes": {
     "languages": [
@@ -100,6 +101,16 @@
         "language": "vclang",
         "scopeName": "source.vclang",
         "path": "./syntaxes/vclang.tmLanguage.json"
+      },
+      {
+        "scopeName": "voxelcore.layout.lua-attributes",
+        "path": "./syntaxes/vclayout-lua.injection.json",
+        "injectTo": [
+          "text.xml"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.inline.lua": "lua"
+        }
       }
     ],
     "snippets": [
@@ -122,9 +133,18 @@
       {
         "language": "vca",
         "path": "./snippets/vca.json"
+      },
+      {
+        "language": "xml",
+        "path": "./snippets/xml.json"
       }
     ],
     "commands": [
+      {
+        "command": "voxelcore.newProject",
+        "title": "New Project…",
+        "category": "VoxelCore"
+      },
       {
         "command": "voxelcore.newPack",
         "title": "New Content Pack…",
@@ -151,6 +171,11 @@
         "category": "VoxelCore"
       },
       {
+        "command": "voxelcore.newLayout",
+        "title": "New Layout…",
+        "category": "VoxelCore"
+      },
+      {
         "command": "voxelcore.run",
         "title": "Run Engine",
         "category": "VoxelCore",
@@ -161,6 +186,12 @@
         "title": "Run Quick World",
         "category": "VoxelCore",
         "icon": "$(play-circle)"
+      },
+      {
+        "command": "voxelcore.runProject",
+        "title": "Run Project",
+        "category": "VoxelCore",
+        "icon": "$(rocket)"
       },
       {
         "command": "voxelcore.runHeadlessScript",
@@ -318,6 +349,10 @@
       ],
       "voxelcore.new": [
         {
+          "command": "voxelcore.newProject",
+          "group": "0_project"
+        },
+        {
           "command": "voxelcore.newPack",
           "group": "1_pack"
         },
@@ -340,6 +375,11 @@
           "command": "voxelcore.newComponent",
           "group": "2_unit@4",
           "when": "voxelcore.hasPacks"
+        },
+        {
+          "command": "voxelcore.newLayout",
+          "group": "2_unit@5",
+          "when": "voxelcore.hasPacks"
         }
       ],
       "commandPalette": [
@@ -357,6 +397,10 @@
         },
         {
           "command": "voxelcore.newComponent",
+          "when": "voxelcore.hasPacks"
+        },
+        {
+          "command": "voxelcore.newLayout",
           "when": "voxelcore.hasPacks"
         },
         {
@@ -451,6 +495,11 @@
           "command": "voxelcore.newPack",
           "when": "view == voxelcore.content",
           "group": "1_new"
+        },
+        {
+          "command": "voxelcore.newProject",
+          "when": "view == voxelcore.content",
+          "group": "1_new"
         }
       ],
       "view/item/context": [
@@ -495,6 +544,11 @@
           "group": "1_new@3"
         },
         {
+          "command": "voxelcore.newLayout",
+          "when": "view == voxelcore.content && viewItem == voxelcore.pack",
+          "group": "1_new@4"
+        },
+        {
           "command": "voxelcore.explorer.revealInOS",
           "when": "view == voxelcore.engine && viewItem =~ /^voxelcore\\.engine\\.(exe|res|user|log)$/",
           "group": "1_reveal@1"
@@ -503,6 +557,21 @@
           "command": "voxelcore.openLog",
           "when": "view == voxelcore.engine && viewItem == voxelcore.engine.log",
           "group": "inline"
+        },
+        {
+          "command": "voxelcore.newPack",
+          "when": "view == voxelcore.content && viewItem == voxelcore.project",
+          "group": "1_new"
+        },
+        {
+          "command": "voxelcore.runProject",
+          "when": "view == voxelcore.content && viewItem == voxelcore.project",
+          "group": "inline"
+        },
+        {
+          "command": "voxelcore.runProject",
+          "when": "view == voxelcore.content && viewItem == voxelcore.project",
+          "group": "0_run"
         },
         {
           "command": "voxelcore.findReferences",
@@ -579,6 +648,17 @@
               "type": "string"
             },
             "description": "Extra engine arguments"
+          },
+          "project": {
+            "type": "string",
+            "description": "Project folder (with a project.toml), passed as --project. Without it the engine uses <userDir>/project, then res/project. 'run' starts the project's start.lua; 'quickWorld' and 'headless' replace it with their script"
+          },
+          "projectArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Project arguments: --key value pairs (a --flag alone is \"\"), passed after a bare --; scripts read them with vc.get_project_arg(\"key\")"
           }
         }
       }
@@ -633,6 +713,11 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Follow `<userDir>/latest.log` to show engine output and map engine errors to the Problems panel for engines started outside VS Code with the same user dir (`voxelcore.userDir`)."
+        },
+        "voxelcore.explorer.packBadges": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Mark content pack folders in the Explorer with a `VC` badge and colour. Icons for pack folders (`blocks`, `textures`, `scripts`, …) come from the *VoxelCore Content Packs* file icon theme (*Preferences: File Icon Theme*)."
         },
         "voxelcore.configureLua": {
           "type": "string",
@@ -733,6 +818,17 @@
                 },
                 "description": "Extra engine arguments"
               },
+              "project": {
+                "type": "string",
+                "description": "Project folder (with a project.toml), passed as --project. 'run' starts the project's start.lua; 'quickWorld' and 'headless' replace it with their script"
+              },
+              "projectArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Project arguments: --key value pairs (a --flag alone is \"\"), passed after a bare --; scripts read them with vc.get_project_arg(\"key\")"
+              },
               "port": {
                 "type": "number",
                 "description": "Debugger port (default: a free one)"
@@ -831,11 +927,30 @@
     "viewsWelcome": [
       {
         "view": "voxelcore.content",
-        "contents": "No VoxelCore content packs in this workspace. A pack is a folder with a package.json that has an \"id\".\n[New Content Pack](command:voxelcore.newPack)"
+        "contents": "No VoxelCore content packs or projects in this workspace. A pack is a folder with a package.json that has an \"id\"; a project is a folder with a project.toml.\n[New Content Pack](command:voxelcore.newPack)\n[New Project](command:voxelcore.newProject)"
       },
       {
         "view": "voxelcore.dependencies",
         "contents": "No workspace content packs."
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "voxelcore",
+        "label": "VoxelCore Content Packs",
+        "path": "./icons/voxelcore-icon-theme.json"
+      }
+    ],
+    "colors": [
+      {
+        "id": "voxelcore.packFolderForeground",
+        "description": "Colour of VoxelCore pack folders and their badge in the Explorer.",
+        "defaults": {
+          "dark": "#9ccc65",
+          "light": "#558b2f",
+          "highContrast": "#b9f6ca",
+          "highContrastLight": "#33691e"
+        }
       }
     ],
     "customEditors": [
@@ -942,7 +1057,7 @@
     ]
   },
   "scripts": {
-    "gen": "node tools/gen-schemas.mjs && node tools/gen-lua-meta.mjs",
+    "gen": "node tools/gen-schemas.mjs && node tools/gen-lua-meta.mjs && node tools/gen-layouts.mjs",
     "contrib": "node tools/merge-contrib.mjs",
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
@@ -950,7 +1065,8 @@
     "test": "node --import tsx --test \"test/**/*.test.ts\"",
     "package": "npm run build -- --production && vsce package --no-dependencies",
     "vscode:prepublish": "npm run build -- --production",
-    "test:vscode": "npm run build && node tools/vscode-smoke.mjs"
+    "test:vscode": "npm run build && node tools/vscode-smoke.mjs",
+    "icons": "node tools/gen-icons.mjs"
   },
   "devDependencies": {
     "@types/luaparse": "^0.2.13",

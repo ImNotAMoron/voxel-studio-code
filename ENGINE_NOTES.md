@@ -205,3 +205,120 @@ asset paths also with a client run).
   themselves (`util::id_to_caption`; `langs::get` returns the key when it
   isn't found). So missing-translation checks compare a pack's non-fallback
   languages with each other, not with `en_US`.
+
+### Found while extracting the XML layout elements (§3.7)
+
+From `src/graphics/ui/gui_xml.cpp`, compared with `doc/en/xml-ui-layouts.md`
+(`node tools/gen-layouts.mjs` prints these as warnings):
+
+- **Undocumented elements**: `modelviewer` (`src` model, `center` and
+  `cam-rotation` vec3) and `pagebox`. The engine's own `code_editor.xml`
+  and `settings.xml` use them.
+- **Undocumented attributes read for every element**: `context` (the
+  locale context for `@key` texts; template attribute), `hover-color`,
+  `pressed-color`, `enabled` and `align` (left/center/right/top/bottom).
+  Also `font` on `select`, `focused-color` on `textbox`, `value` on
+  `option`, and `item-source` on `slots-grid` (documented only for `slot`).
+- **`interval` is listed under "Common panel attributes"**, but only
+  `<panel>` reads it (`read_panel`). `button`, `checkbox`, `select` and
+  `bindbox` (also panels) ignore it, and so does `container`. The engine's
+  own `res/layouts/pages/content.xml` and `content_menu.xml` set
+  `interval='5'` on their root `container`, which has no effect.
+- **`trackbar` `track-width`**: the docs say the default is 1; the engine
+  default is 12.
+- **Colours accept more than the docs say**: `Attribute::asColor`
+  (`src/coders/xml.cpp`) also takes `r,g,b,a` numbers in 0–255; the docs
+  say "only HEX notation". A wrong-length hex colour throws.
+- **Vectors broadcast one number**: `asVec2/3/4` turn `"10"` into
+  `10,10(,10,10)`, but two numbers for a vec3/vec4 throw `invalid vec4
+  value`. `asBool` is true only for `true` and `1`, so `yes` or `True` is
+  silently false.
+- **`slot` `onrightclick` is read twice** (from the source, not run): once
+  as the slot's callback (an expression called with the inventory id and
+  slot index, `read_slot_func`), and again by `read_uinode` as a Lua
+  *chunk* for the slot's own click action. A function name such as
+  `onrightclick="on_rmb"` isn't a valid chunk, so the second read should
+  log a syntax error for every such slot when the layout loads.
+- **Backslashes in layout text are escapes** (checked headless with
+  `xml.parse`): attribute values and inner text go through
+  `BasicParser::parseString`, so `\n` is a newline and a Windows path such
+  as `C:\q` fails the whole layout with `'\q' is an illegal escape`. For
+  inner text, the error position is relative to the text, not the file
+  (`[string]` at `2:3`).
+- **A newline inside a quoted attribute value fails the layout**
+  (`non-closed string literal`), so multi-line `onclick` code isn't possible.
+- **`< panel>` at the very start of a file parses as text** (checked
+  headless): the declaration check calls `peek()` (which skips whitespace),
+  sees no `?` and goes back one character, landing on the space. The root
+  becomes the text `panel >`, and loading fails with `unsupported element
+  '#'`. Elsewhere `< panel>` and `</panel >` are accepted.
+- **Numbers are read from a prefix**: `util::parse_double` uses
+  `std::from_chars` and ignores what follows the number, so `size="100 50"`
+  is `100,100`, `interval="2px"` is 2 and `padding="1,2,3,4,5"` drops the
+  5, all silently. Integers (`std::stoll`) do the same: `z-index="1.5"` is 1.
+  Only text without a leading number throws (`invalid number format`).
+- **A non-numeric integer may escape the asset loader** (from the source,
+  not run): `std::stoll` throws `std::invalid_argument`, a `logic_error`,
+  but `AssetsLoader::loadNext` catches only `parsing_error` and
+  `std::runtime_error`. `z-index="top"` in a pack's top-level layout would
+  then propagate past the loader instead of being reported as a failed
+  asset.
+- **The root element's id is replaced**: `UiDocument::read` calls
+  `setId("root")` on the root, so `<splitbox id="editorRoot">` in
+  `res/layouts/code_editor.xml` is only reachable as `document.root`.
+- **Duplicate ids hide whole subtrees**: `UINode::getIndices` returns early
+  when an id is already taken by an attached element, without indexing the
+  duplicate's children, so `document.<id>` is nil for every element inside
+  it. `res/layouts/pages/content.xml` has three elements with id
+  `move_left` (lines 6, 10, 30: a check mark, a cross and the left arrow),
+  apparently copy-paste; its script doesn't use `document.move_left`, so
+  nothing breaks today.
+- **A missing image texture draws a plain rectangle**: `Image` passes a null
+  texture to `Batch2D::texture`, which binds the blank texture, so the
+  element is a solid rectangle of its colour instead of nothing.
+  `res/layouts/templates/binding.xml` uses `gui/left_half_block`, which
+  doesn't exist (only `gui/half_block.png`, preloaded): the conflict marks
+  that `settings_controls.xml.lua` shows next to bindings are therefore
+  coloured bars, not half blocks.
+- **Unknown attributes are dropped silently**: readers only look up the
+  attributes they know, so a typo such as `orientaton` has no effect and
+  produces no message. Unknown *elements* do fail (`unsupported element`).
+
+### Found while adding project support (§3.11)
+
+Checked with a windowed and a headless engine run (`--project <dir>`) unless
+marked otherwise.
+
+- **Projects are barely documented**: `doc/en` only mentions the
+  `project:content` source (`content-packs.md`). `project.toml` keys
+  (`name`, `title`, `base_packs`, `permissions`), the permissions, `start.lua`,
+  `project_client.lua` and its `on_<screen>_setup` / `on_<screen>_clear`
+  callbacks are only in the source (`Project.cpp`, `AppScriptsControl.cpp`,
+  `scripting.cpp` `LuaProjectScript`).
+- **A bare `require` fails in `project_client.lua`**: the script is loaded
+  with the chunk name `script.name()` (`project_client.lua`, no entry point),
+  so `require "x"` throws `invalid path syntax (':' missing)` from
+  `parse_path`; `require "project:x"` works. In `start.lua` (chunk
+  `project:start.lua`) a bare `require "x"` loads `<project>/modules/x.lua`.
+  Errors in the client script are logged as `[string "project_client.lua"]:N`.
+- **Headless, a project's `start.lua` stops at its first wait**:
+  `AppScriptsControl` starts `project:start.lua` when there's no `--script`,
+  but `ServerMainloop::run` returns at once ("nothing to do") when
+  `scriptFile` is empty, so the coroutine never resumes after its first
+  `app.tick()` / `app.sleep()`. A headless project has to be run with its
+  script as `--script`.
+- **Unknown permissions are accepted silently** (only logged in the
+  `permissions:` list), so a typo like `netwrk` simply leaves the permission
+  off; `network.*` then throws "network subsystem is not available in the
+  project".
+- **`file.mkdir` / `file.mkdirs` skip the write check**: unlike
+  `file.write`, `write_bytes`, `remove` and `remove_tree`, they don't call
+  `is_writeable`, so without `write-to-user` `file.write("user:x")` is
+  "access denied" but `file.mkdir("user:dir")` creates the folder.
+- **`app` isn't a global in client pack scripts** (from the source, not
+  run): `lua_engine.cpp` sets the `app` global only for `StateType::SCRIPT`,
+  which is the main state when headless; a client's main state is `BASE`.
+  App scripts and `project_client.lua` get `app` through their environment.
+  `meta/libraries.json` lists `app` for every state.
+- `AppScriptsControl::terminate` dereferences `scriptCoroutine` without a
+  null check (no `start.lua` and no `--script`), but nothing calls it today.

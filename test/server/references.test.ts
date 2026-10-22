@@ -94,7 +94,12 @@ test("rename plans: files, linked defaults, refusals", () => {
         "crate.json → box.json", "crate.lua → box.lua", "crate.xml → box.xml", "crate.xml.lua → box.xml.lua",
     ]);
     assert.ok(plan.unit);
-    assert.equal(plan.edits.size, 4);
+    assert.equal(plan.edits.size, 5);
+    // the moved layout is renamed in <iframe src> too (layoutRefs)
+    const menu = [...plan.edits].find(([file]) => file.endsWith("menu.xml"));
+    assert.ok(menu, "menu.xml iframe");
+    const menuText = fs.readFileSync(menu[0], "utf8");
+    assert.deepEqual(menu[1].map((e) => menuText.slice(e.start, e.end) + " → " + e.newText), ["crate → box"]);
     // an item with an explicit script-name keeps its script
     const wand = refs.planRename(symbol("items/wand.json"), "staff") as RenamePlan;
     assert.deepEqual(wand.renames.map((r) => path.basename(r.to)), ["staff.json"]);

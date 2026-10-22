@@ -87,6 +87,7 @@ async function startLanguageServer(context: vscode.ExtensionContext) {
             { scheme: "file", language: "vcm" },
             { scheme: "file", language: "vca" },
             { scheme: "file", language: "vclang" },
+            { scheme: "file", language: "xml", pattern: "**/layouts/**/*.xml" },
         ],
         synchronize: {
             configurationSection: "voxelcore",

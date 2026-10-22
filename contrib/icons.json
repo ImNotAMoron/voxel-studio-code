@@ -1,0 +1,32 @@
+{
+    "contributes": {
+        "iconThemes": [
+            {
+                "id": "voxelcore",
+                "label": "VoxelCore Content Packs",
+                "path": "./icons/voxelcore-icon-theme.json"
+            }
+        ],
+        "colors": [
+            {
+                "id": "voxelcore.packFolderForeground",
+                "description": "Colour of VoxelCore pack folders and their badge in the Explorer.",
+                "defaults": {
+                    "dark": "#9ccc65",
+                    "light": "#558b2f",
+                    "highContrast": "#b9f6ca",
+                    "highContrastLight": "#33691e"
+                }
+            }
+        ],
+        "configuration": {
+            "properties": {
+                "voxelcore.explorer.packBadges": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Mark content pack folders in the Explorer with a `VC` badge and colour. Icons for pack folders (`blocks`, `textures`, `scripts`, …) come from the *VoxelCore Content Packs* file icon theme (*Preferences: File Icon Theme*)."
+                }
+            }
+        }
+    }
+}

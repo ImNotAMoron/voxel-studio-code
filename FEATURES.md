@@ -8,21 +8,22 @@ as built, see [ARCHITECTURE.md](ARCHITECTURE.md); for working on it, see
 
 ## Implementation status
 
-Updated 2026-10-22. **MVP (all P0) done**, plus §3.10, §4.3, §5.4, §5.8. Keep this table current when you
+Updated 2026-10-23. **MVP (all P0) done**, plus §3.10, §3.11, §4.3, §5.4, §5.8. Keep this table current when you
 change a feature.
 
 | § | Feature | Status | Notes / deviations from the design below |
 |---|---|---|---|
 | 3.1 | Schemas | ✅ done | 21 generated schemas. TOML schemas and pack roots outside `content/` are wired through workspace settings (`src/schemas/`) because `tomlValidation` can't take relative URLs. No Russian descriptions yet |
-| 3.2 | Lua API | ✅ done | `meta/` (680 functions) + sumneko.lua config. Per-script-kind checks in vcls. Callbacks aren't in `meta/` |
-| 3.3 | Pack linter | ✅ done | ~70 rules (VC0001–VC0226) + CLI. Missing: translucency hint, locale and XML checks |
+| 3.2 | Lua API | ✅ done | `meta/` (680 functions) + sumneko.lua config. Per-script-kind checks in vcls. Callbacks aren't in `meta/`. **Todo (procedural animation):** the `animation` library has no docs page, so it isn't in `meta/`: add it from `res/modules/animation.lua` (`play(name, target)` → track with `stop`/`pause`/`resume`, `action(func)` per-frame coroutine, `get_track`, `CH_*`/`INT_*` constants); also the undocumented skeleton methods `reset_pose`, `is_interpolated`/`set_interpolated` (`lib__skeleton.cpp`); check that VCA `func` expressions only use the functions `vca.md` lists |
+| 3.3 | Pack linter | ✅ done | ~90 rules (VC0001–VC0416) + CLI. Locale (§3.6) and XML layout (§3.7) checks added since. Missing: translucency hint |
 | 3.4 | VCM / VCA | ✅ done | **Deviation:** structure comes from the TypeScript parser `shared/vcm/parser.ts` (mirrors the engine), not tree-sitter. TextMate highlighting. No formatter or inlay hints yet |
-| 3.5 | Navigation | ✅ done | definition, completion, document symbols, references, rename (F2, `willRenameFiles` from the Explorer, content explorer action), workspace symbols, code lens (reference count; "script of …"). `server/src/features/references.ts`: a symbol is the file a reference resolves to. Rename also renames the unit's default script / `ui-layout` / `skeleton-name` and edits `content.json` in place (the engine would append the new name and shift later indices). **Deviation:** the content-index warning is a `needsConfirmation` change annotation (refactor preview), not a separate warning. Missing: XML layouts and locale keys aren't searched; the default caption's locale key isn't renamed; code lens "used by N scripts" is only "script of …" for scripts |
+| 3.5 | Navigation | ✅ done | definition, completion, document symbols, references, rename (F2, `willRenameFiles` from the Explorer, content explorer action), workspace symbols, code lens (reference count; "script of …"). `server/src/features/references.ts`: a symbol is the file a reference resolves to. Rename also renames the unit's default script / `ui-layout` / `skeleton-name` and edits `content.json` in place (the engine would append the new name and shift later indices). **Deviation:** the content-index warning is a `needsConfirmation` change annotation (refactor preview), not a separate warning. Layout textures, models and layout ids, layout script functions and `document.<id>` are searched (§3.7). Missing: locale keys aren't searched; the default caption's locale key isn't renamed; code lens "used by N scripts" is only "script of …" for scripts |
 | 3.6 | Locale files | ✅ done | `shared/content/locale.ts` ports the engine reader (escapes, `\`-newline, first `=`, trim). Language `vclang` (`**/texts/*.txt`, TextMate grammar), outline by `#` comment sections. Rules VC0300 parse error (content load fails, checked with a real run), VC0301 duplicate key, VC0302 language not in `res/texts/langs.json`, VC0303 keys missing vs the pack's other languages, VC0304 unit captions (`caption` or `id_to_caption`, item `description`) without a translation; quick fix inserts stubs (fallback-language text or the key). Hover on `caption`/`description`, `gui.str("key"[, "ctx"])` and locale keys shows all translations with their pack. **Deviation:** the fallback language (`en_US`) is never checked for missing keys: the engine shows the key, and captions are English already (base ships no `en_US.txt`). Missing: XML `@key` texts (§3.7), the Translations webview, rename of caption keys with the unit |
-| 3.7 | XML layouts | ⬜ todo | |
-| 3.8 | Snippets + scaffolding | 🟡 partial | snippets + *New Pack/Block/Item/Entity/Component*. Missing: walkthrough, generator scaffold |
+| 3.7 | XML layouts | ✅ done (previews archived) | Step 1: element/attribute data generated from `gui_xml.cpp` by `tools/gen-layouts.mjs` → `shared/layouts/elements.json` (19 elements incl. `option`/`slot`/`slots-grid`; value types, defaults, enums, Lua chunk vs expression with signatures, `@key` texts, children), docs merged. All tags/attributes in the engine's 35 layouts are covered. Step 2 done: language server support for `layouts/**/*.xml` (role `layout`, incl. `pages/`, `templates/` and the engine's `res/layouts`). `shared/layouts/xml.ts` ports `xml::parse` (first error = the engine's, checked headless; recovers after it). Rules VC0400 parse error, VC0401 unsupported element (+ sub-elements outside their parent), VC0402 attribute the element doesn't read (did-you-mean / which elements read it; quick fix), VC0403 ignored child or text, VC0404 repeated attribute. Completion of tags (by parent), attributes (typed snippets) and enum/bool values; hover docs for elements, attributes and values; outline. Step 3 done: attribute values (`shared/layouts/values.ts` models `util::parse_double` = `from_chars` on a prefix, `std::stoll`, `asVec2/3/4` comma splitting, `asColor`, `asBool`): VC0405 the engine throws (layout fails to load), VC0406 unknown enum value (with what the engine does instead, quick fix), VC0407 read differently than written (`100 50`, extra components, `1.5` as int, `yes` as bool, bad hex digit), VC0408 duplicate id (the duplicate's subtree isn't indexed) or `root`, VC0409 root id is replaced by `root`. Step 4 done: colour swatches + picker for colour attributes (LSP `documentColor` / `colorPresentation` in `server/src/features/layout.ts`): hex and `r,g,b,a` values the engine reads cleanly; a picked colour is written in the value's own format (hex case and length kept), the other format offered second. Step 5 done: Lua highlighting inside the 22 callback attributes (`onclick`, `consumer`, `position-func`, `updatefunc`, …): a TextMate injection into `text.xml` generated by `tools/gen-layouts.mjs` (`syntaxes/vclayout-lua.injection.json`, `embeddedLanguages` → Lua comment/bracket behaviour), checked with VS Code's own tokenizer in the smoke test. Grammars can't be limited by path, so it matches only those exact attribute names in any XML file; a Lua `--` comment colours the rest of its line. Step 6 done: callbacks are parsed the way the engine compiles them (chunks as is, expressions as `"return " .. value`, `server/src/features/layoutLua.ts`). VC0410 Lua syntax error (e.g. `onclick="refresh"`: a bare name isn't a statement; quick fix adds `()`), VC0411 a global that neither the `.xml.lua`, the engine (`server/src/lua/globals.ts`: Lua builtins, meta libraries, globals assigned in res/scripts and res/modules, environment names) nor any Lua file of the pack defines; templates are skipped (they run in their host document). Go to definition from a callback to its function in the `.xml.lua`. No false positives on the engine's 35 layouts. Steps 7–10 done: `document.<id>` completion, hover and definition in the `.xml.lua` (`shared/layouts/ids.ts` models `UINode::getIndices`: root is `root`, the first id wins and a duplicate's subtree isn't indexed, unread elements don't exist; `server/src/features/layoutDocument.ts`); layout names are references (`layoutRefs` in `references.ts`: `image` `src`/`fallback`, `modelviewer` `src`, `iframe` `src`), so hovers with images, gutter thumbnails, definition, value completion, Find References and Rename cover them; VC0412 missing texture / atlas / model / layout (a missing texture draws a plain rectangle: Batch2D's blank texture), VC0413 texture not in any preload.json (hint), VC0414 unknown binding (the engine throws); `@key` hovers (inner text, `tooltip`, `hint`) follow the `context` attribute like `langs::get`. Also done: completion inside callback attributes (the `.xml.lua`'s functions: `name(…)` snippet in chunks, `name` in expressions; a `function(…) end` stub with the engine's arguments; engine names), XML snippets (`snippets/xml.json`, every one lints clean expanded), *New Layout* (screen / inventory / empty, `.xml` + `.xml.lua`). Then: Find References and Rename across a layout and its script (`server/src/features/layoutNames.ts`): the script's functions ↔ the callbacks naming them, element ids ↔ `document.<id>` / `document["id"]` (rename refuses Lua keywords, existing functions or ids, `root`, and non-identifier ids used as `document.x`); VC0415 `select` `selected` matching no `<option>` (skipped when a script fills the options), VC0416 a font no preload.json loads (the label draws no text); font and binding values are completed. **Archived**: the layout preview webview, exact rendering through the engine (§5.2 for layouts) and XML-format models (`models/*.xml`) — large for their value (an approximate layout engine, or engine-side work; no pack uses XML models), revisit on demand |
+| 3.8 | Snippets + scaffolding | 🟡 partial | snippets (incl. XML layouts) + *New Pack/Block/Item/Entity/Component/Layout*. Missing: walkthrough, generator scaffold |
 | 3.9 | Asset hovers | ✅ done | `server/src/features/assets.ts`: texture references (JSON, VCM `texture`) show a nearest-neighbour thumbnail (`shared/assets/png.ts`, pngjs) with size, color type, alpha (opaque / cut-out / translucent) and animation; `texture-faces` shows all six faces labelled in engine order (Block.hpp `-X +X -Y +Y -Z +Z`); sounds list their variants with durations (`shared/assets/audio.ts`) and open links; models show format, triangles, size and textures with an *Open preview* link. Gutter thumbnails (`src/thumbnails/`, setting `voxelcore.gutterThumbnails`). **Deviations:** thumbnails are data URIs (no cache dir in the server); sounds open in VS Code's media viewer instead of a play webview; model hovers show facts, not a rendered thumbnail. Command links run only `voxelcore.openFile` / `voxelcore.previewFile` (hover middleware sets `isTrusted.enabledCommands`) |
-| 3.10 | Content explorer | ✅ done | `src/explorer/`: Content (packs → categories, texture icons, captions translated with `vscode.env.language`), Dependencies (port of `PacksManager::assemble` in `shared/content/assemble.ts`), Engine (paths, run status, run/output buttons). Context menu: preview, copy id, reveal, find references, rename. Missing: delete, Debug and Hot reload actions (§4.2, §4.4), connection status |
+| 3.10 | Content explorer | ✅ done | `src/explorer/`: Content (packs → categories, texture icons, captions translated with `vscode.env.language`), Dependencies (port of `PacksManager::assemble` in `shared/content/assemble.ts`), Engine (paths, run status, run/output buttons). Context menu: preview, copy id, reveal, find references, rename. In VS Code's own Explorer: a `VC` badge + colour on pack root folders (`src/explorer/decorations.ts`, any icon theme) and the opt-in file icon theme *VoxelCore Content Packs* (`icons/`, generated by `tools/gen-icons.mjs`: pack folders by name, pack file types). Missing: delete, Debug and Hot reload actions (§4.2, §4.4), connection status |
+| 3.11 | Projects | ✅ done | `shared/content/project.ts` + `ContentIndex.projects` (folders with a `project.toml` in the workspace, plus `res/project`): fields read like `Project::deserialize`, `start.lua` / `project_client.lua`, packs in `<project>/content`. Script kinds `app` (start.lua) and `project` (project_client.lua: `on_menu_setup/clear`, `on_level_setup/clear` completion and VC0101). Rules VC0500 unknown permission (quick fix), VC0501 base pack not found, VC0502 base pack outside the project's content sources (hint), VC0503 a call that needs a permission the project doesn't grant (`network.*`, `app.start_debug_instance`, `app.start_background_instance`, `file.write`/`write_bytes`/`remove`/`remove_tree` on `user:`; quick fix grants it in project.toml), VC0504 bare `require` in project_client.lua (quick fix `project:`); `require` in start.lua resolves `<project>/modules`, go to definition too. CLI lints a project folder. Content explorer: project nodes (files, permissions, base packs, content packs; *Run Project*, *New Content Pack* into `content/`). *New Project…*. `voxelcore` tasks and launches take `project` (`--project`) and `projectArgs` (after `--`); *Run Project* runs it as it is (its own start.lua). Log → Problems and the debugger map `project:` chunks and the bare `project_client.lua` chunk (real logs/engine tested). **Limits:** Quick World and debug launches replace start.lua with their `--script`; headless, a project's start.lua stops at its first wait (ENGINE_NOTES.md); breakpoints in project_client.lua are untested (client only) |
 | 4.1 | Run in engine | ✅ done | `voxelcore` task type (`run` / `quickWorld` / `headless`), pack junctions in the dev user dir |
 | 4.2 | Hot reload | ✅ done | `src/hotreload/`. Runs and debug launches start with `--dbg-server`; a run keeps a VC-DBG connection (`src/debug/channels.ts`) that resumes every pause. Assets: VC-DBG `hot-reload` with the `user:content/<pack>/…` path (the `pack:` form in the design below enqueues nothing). **Deviation:** modules and content don't go through the debugger or §4.6: the quick-world app script keeps running and serves requests from `<userDir>/export/vscode/bridge.json` (`reload_module`, `app.reconfig_packs({}, {})`, which reloads content and reopens the world); `voxelcore.hotReload.content` = ask/auto/off. Atlas textures, shaders and sounds report "restart needed" (not reloadable by the engine). Status bar item + Engine view row. Missing: module/content reload for *Run engine* (menu) and attached engines without the bridge script |
 | 4.3 | Log → Problems | ✅ done | `shared/log/` (parser, problem patterns, resolver) + `src/log/`. **Deviation:** done in the extension host, not vcls (the host owns the engine process). LogOutputChannel, `voxelcore-runtime` diagnostics cleared per run, links in the output channel / task terminal / `latest.log`, `latest.log` tailing. Patterns tested on real engine logs (`test/log/fixtures/logs`). No `$voxelcore` problem matcher: logs use virtual paths a matcher can't map; assets errors seen only in a client run aren't covered by fixtures |
@@ -156,6 +157,7 @@ Priority: **P0** = MVP, **P1** = strongly wanted, **P2** = nice to have.
 | 3.8 | Snippets, scaffolding wizards and walkthrough | P0 | snippets + commands |
 | 3.9 | Texture and asset hover previews | P1 | vcls (hover markdown) |
 | 3.10 | Content explorer sidebar | P1 | tree views |
+| 3.11 | Projects (`project.toml`, `start.lua`, `project_client.lua`, permissions) | P1 | vcls + client |
 | 4.1 | Run the pack in the engine (one command, no manual copying) | P0 | TaskProvider |
 | 4.2 | Live hot reload (assets, Lua modules) | P1 | client → VC-DBG `hot-reload` |
 | 4.3 | Engine log → Problems panel + Output channel | P1 | problem matchers + vcls |
@@ -508,7 +510,10 @@ Features built on the index:
   `src/graphics/ui/gui_xml.cpp` (each `add("tag", reader)` registration and
   the `element.attr("…")` / `has("…")` calls) and merged with
   `doc/en/xml-ui-layouts.md`. Some elements, such as `modelviewer`, aren't
-  documented yet.
+  documented yet. **Done**: `tools/gen-layouts.mjs` follows the helper
+  calls (`read_uinode`, `read_panel_impl`, `register_action`, the
+  `readUINode` overload picked by the node's class) and fails when it meets
+  a read it can't classify.
 - vcls serves completion, hover and validation for `layouts/**/*.xml`. The
   built-in XML support has no schema awareness, so vcls registers for
   `{language: "xml", pattern: "**/layouts/**/*.xml"}`.
@@ -524,10 +529,12 @@ Features built on the index:
   matching `.xml.lua`.
 - `src` / `fallback` on `image` are validated as textures; `src` on
   `modelviewer` is validated as a model.
-- P2: a **layout preview** webview that approximates panel/container layout
-  (orientation, padding, margin, gravity, sizes) and updates while typing.
-  For exact rendering, the engine-accurate preview (§5.2) can load the
-  layout.
+- P2, **archived** (2026-10-22): a **layout preview** webview that
+  approximates panel/container layout (orientation, padding, margin,
+  gravity, sizes) and updates while typing. For exact rendering, the
+  engine-accurate preview (§5.2) could load the layout. Both need a layout
+  engine of their own (or engine-side work) for little day-to-day value
+  next to the checks, hovers and completion; revisit on demand.
 
 ### 3.8 Snippets, scaffolding and walkthrough — P0
 
@@ -586,8 +593,42 @@ with tree views (`TreeDataProvider`, fed by the content index):
   status. Inline actions: Run, Debug, Hot reload, Open log.
 - Context menus: open definition, preview, find references, rename, delete
   (with a reference check).
+- VS Code's own Explorer: pack root folders get a badge and colour (a
+  `FileDecorationProvider`, so it works with any icon theme). Icons for the
+  pack folders come from an optional file icon theme: an icon theme can
+  only match folders by name and replaces the user's theme, so it is
+  opt-in.
 
 ---
+
+### 3.11 Projects — P1
+
+**What the user gets:** a project (the "app" on the engine: `--project <dir>`
+with `project.toml`, `start.lua`, `project_client.lua`, `modules/` and
+`content/`) is understood like a pack. Its files are linted, its scripts get
+their callbacks and module resolution, the explorer shows it, and it can be
+created and run from VS Code.
+
+**Engine facts** (`src/devtools/Project.cpp`, `AppScriptsControl.cpp`,
+`Engine.cpp`, `ContentControl.cpp`; the user docs only mention
+`project:content`):
+- `project.toml`: `name`, `title`, `base_packs` (loaded at start-up by
+  `ContentControl::resetContent` without dependency resolution; a missing one
+  throws `pack not found`), `permissions` (`debugging`, `network`,
+  `record-audio`, `write-to-user`, `sub-instances`; anything else is ignored).
+- `start.lua`: an app script (coroutine, `app` in its environment), unless
+  `--script` is given. `project_client.lua`: clients only, gets `app`;
+  `on_<screen>_setup` / `on_<screen>_clear` with `menu` / `level`.
+- Content sources: `world:content`, `user:content`, `project:content`,
+  `res:content`. Without `--project` the engine uses `<userdir>/project`,
+  then `res/project`, then `res`.
+- Project arguments: `--key value` pairs after a bare `--`,
+  `vc.get_project_arg("key")`.
+
+**How:** see the status table. Rules VC0500–VC0504; the permission table is
+`requiredPermission` in `shared/content/project.ts` (each entry is a throw in
+the engine source). Packs in `<project>/content` get VC0503 too, since they run
+under that project.
 
 ## 4. Run, reload, debug, test
 

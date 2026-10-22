@@ -2,7 +2,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { ContentIndex, PackInfo } from "../../shared/content/index";
+import { ContentIndex, PackInfo, ProjectInfo } from "../../shared/content/index";
 import { FileContext, LintEnv } from "./rules/context";
 import { lintBlock, lintEntity, lintItem, lintMaterial, lintSkeleton } from "./rules/defs";
 import { lintLua } from "./rules/lua";
@@ -13,11 +13,14 @@ import { LintSettings } from "./rules/registry";
 import { Report, VcDiagnostic, jsonErrorMessage, parseJsonDoc } from "./rules/report";
 import { lintVca, lintVcm } from "./rules/vcm";
 import { lintLocale } from "./rules/locale";
+import { lintLayout } from "./rules/layout";
+import { lintProject } from "./rules/project";
 import { SchemaStore } from "./schemas";
 
 export type FileRole =
     | "package" | "content" | "block" | "item" | "entity" | "material" | "skeleton" | "generator"
-    | "biomes" | "structures" | "tags" | "preload" | "lua" | "vcm" | "vca" | "locale" | "skipped" | "other";
+    | "biomes" | "structures" | "tags" | "preload" | "lua" | "vcm" | "vca" | "locale" | "layout" | "skipped"
+    | "project" | "other";
 
 export function relPath(pack: PackInfo, file: string): string {
     return path.relative(pack.root, file).split(path.sep).join("/");
@@ -25,6 +28,11 @@ export function relPath(pack: PackInfo, file: string): string {
 
 export function fileRole(index: ContentIndex, file: string): { pack?: PackInfo; role: FileRole; rel: string } {
     const pack = index.packForFile(file);
+    // project files (res/project lies inside the core pack's folder)
+    const projectFile = index.projectFile(file);
+    if (projectFile && (!pack || pack.id === "core" && !pack.packageFile)) {
+        return { pack, role: projectFile.kind === "toml" ? "project" : "lua", rel: path.basename(file) };
+    }
     if (!pack) {
         const ext = path.extname(file).toLowerCase();
         return { role: ext === ".vcm" ? "vcm" : ext === ".vca" ? "vca" : ext === ".lua" ? "lua" : "other", rel: path.basename(file) };
@@ -38,6 +46,7 @@ export function fileRole(index: ContentIndex, file: string): { pack?: PackInfo; 
         if (ext === ".lua") return { pack, role: "lua", rel };
         if (ext === ".vcm") return { pack, role: "vcm", rel };
         if (ext === ".vca") return { pack, role: "vca", rel };
+        if (parts[0] === "layouts" && ext === ".xml") return { pack, role: "layout", rel };
         return { pack, role: "other", rel };
     }
     if (rel === "package.json") return { pack, role: "package", rel };
@@ -60,6 +69,8 @@ export function fileRole(index: ContentIndex, file: string): { pack?: PackInfo; 
         }
     }
     if (parts[0] === "texts" && parts.length === 2 && ext === ".txt") return { pack, role: "locale", rel };
+    // top-level layouts load as documents; subfolders (pages, templates) are read on demand
+    if (parts[0] === "layouts" && ext === ".xml") return { pack, role: "layout", rel };
     if (ext === ".lua") return { pack, role: "lua", rel };
     if (ext === ".vcm") return { pack, role: "vcm", rel };
     if (ext === ".vca") return { pack, role: "vca", rel };
@@ -120,11 +131,13 @@ export function lintDocument(env: LintEnv, file: string, text: string, options: 
             case "structures": lintStructures(ctx); break;
             case "tags": lintTags(ctx); break;
             case "lua":
-                if (pack && (pack.id !== "core" || pack.packageFile)) lintLua(ctx);
+                if (pack && (pack.id !== "core" || pack.packageFile) || env.index.projectFile(file)) lintLua(ctx);
                 break;
+            case "project": lintProject(ctx); break;
             case "vcm": lintVcm(ctx); break;
             case "vca": lintVca(ctx); break;
             case "locale": lintLocale(ctx); break;
+            case "layout": lintLayout(ctx); break;
         }
     } catch (err) {
         // a rule crash must never take the server down
@@ -252,6 +265,21 @@ export function lintPackAssets(env: LintEnv, pack: PackInfo, mentions: Set<strin
     for (const [name, file] of pd.models) {
         if (mentions.has(name)) continue;
         add("VC0062", file, `model '${name}' is not referenced by any definition, skeleton, preload.json or script`, ["unnecessary"]);
+    }
+    return result;
+}
+
+/** Lints a project's own files (project.toml, start.lua, project_client.lua). */
+export function lintProjectFiles(
+    env: LintEnv,
+    project: ProjectInfo,
+    getText: (file: string) => string | undefined = readText,
+): Map<string, VcDiagnostic[]> {
+    const result = new Map<string, VcDiagnostic[]>();
+    for (const file of [project.file, project.startScript, project.clientScript]) {
+        if (!file) continue;
+        const text = getText(file);
+        if (text !== undefined) result.set(file, lintDocument(env, file, text));
     }
     return result;
 }

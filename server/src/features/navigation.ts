@@ -8,6 +8,7 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { fileKey, fileToUri } from "../uri";
 import { ContentSymbol, RenamePlan, ReferenceIndex, SymbolKindName, symbolOfFile } from "./references";
+import { checkLayoutRename, layoutNameAt, layoutNameOccurrences } from "./layoutNames";
 
 /** Client-side command (src/extension.ts) that opens the references peek. */
 export const SHOW_REFERENCES_COMMAND = "voxelcore.showReferences";
@@ -34,6 +35,12 @@ class Positions {
 
 export function findReferences(refs: ReferenceIndex, doc: TextDocument, file: string, offset: number, includeDeclaration: boolean, getText: GetText): Location[] {
     const at = refs.symbolAt(file, doc.getText(), offset);
+    // a layout script function or element id (both files) beats the file's own symbol
+    const name = at?.ref ? undefined : layoutNameAt(file, doc.getText(), offset, getText);
+    if (name) {
+        const positions = new Positions(getText);
+        return layoutNameOccurrences(name, getText).map((o) => ({ uri: fileToUri(o.file), range: positions.range(o.file, o.start, o.end) }));
+    }
     if (!at) return [];
     return symbolReferences(refs, at.symbol, includeDeclaration, getText);
 }
@@ -48,8 +55,10 @@ export function symbolReferences(refs: ReferenceIndex, symbol: ContentSymbol, in
     return out;
 }
 
-export function prepareRename(refs: ReferenceIndex, doc: TextDocument, file: string, offset: number): { range: Range; placeholder: string } | ResponseError<void> {
+export function prepareRename(refs: ReferenceIndex, doc: TextDocument, file: string, offset: number, getText?: GetText): { range: Range; placeholder: string } | ResponseError<void> {
     const at = refs.symbolAt(file, doc.getText(), offset);
+    const name = !at?.ref && getText ? layoutNameAt(file, doc.getText(), offset, getText) : undefined;
+    if (name) return { range: { start: doc.positionAt(name.start), end: doc.positionAt(name.end) }, placeholder: name.name };
     if (!at?.ref) {
         return new ResponseError(0, "Rename a VoxelCore id from one of its references, or rename the file in the Explorer");
     }
@@ -61,6 +70,17 @@ export function prepareRename(refs: ReferenceIndex, doc: TextDocument, file: str
 
 export function rename(refs: ReferenceIndex, doc: TextDocument, file: string, offset: number, newName: string, getText: GetText): WorkspaceEdit | ResponseError<void> {
     const at = refs.symbolAt(file, doc.getText(), offset);
+    const name = at?.ref ? undefined : layoutNameAt(file, doc.getText(), offset, getText);
+    if (name) {
+        const problem = checkLayoutRename(name, newName, getText);
+        if (problem) return new ResponseError(0, problem);
+        const positions = new Positions(getText);
+        const changes: Record<string, { range: Range; newText: string }[]> = {};
+        for (const o of layoutNameOccurrences(name, getText)) {
+            (changes[fileToUri(o.file)] ??= []).push({ range: positions.range(o.file, o.start, o.end), newText: newName });
+        }
+        return { changes };
+    }
     if (!at) return new ResponseError(0, "no VoxelCore id here");
     return renameSymbol(refs, at.symbol, newName, getText);
 }

@@ -11,11 +11,12 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { ContentIndex } from "../../shared/content/index";
 import { CREATE_TEXTURE_COMMAND, codeActions, writePlaceholderTexture } from "./features/codeActions";
 import { complete, definition, documentSymbols, hover } from "./features/language";
+import { layoutColorPresentations, layoutColors } from "./features/layout";
 import {
     codeLenses, findReferences, prepareRename, rename, renameSymbol, symbolReferences, willRenameFiles, workspaceSymbols,
 } from "./features/navigation";
 import { ReferenceIndex, symbolOfFile } from "./features/references";
-import { collectMentions, createEnv, fileRole, lintDocument, lintPack } from "./linter";
+import { collectMentions, createEnv, fileRole, lintDocument, lintPack, lintProjectFiles } from "./linter";
 import { LintEnv } from "./rules/context";
 import { LintSettings, SeverityOverride, ruleHref } from "./rules/registry";
 import { VcDiagnostic } from "./rules/report";
@@ -122,8 +123,11 @@ function lintWorkspace() {
     const e = env();
     const mentions = collectMentions(index, textOf);
     const seen = new Set<string>();
-    for (const pack of index.lintablePacks()) {
-        const results = lintPack(e, pack, textOf, mentions);
+    const resultsList = [
+        ...index.lintablePacks().map((pack) => lintPack(e, pack, textOf, mentions)),
+        ...index.lintableProjects().map((project) => lintProjectFiles(e, project, textOf)),
+    ];
+    for (const results of resultsList) {
         for (const [file, list] of results) {
             const open = openDocFor(file);
             const uri = open?.uri ?? fileToUri(file);
@@ -213,10 +217,11 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
-            completionProvider: { triggerCharacters: ['"', "'", "@", ":", "/", " ", "."], resolveProvider: false },
+            completionProvider: { triggerCharacters: ['"', "'", "@", ":", "/", " ", ".", "<"], resolveProvider: false },
             hoverProvider: true,
             definitionProvider: true,
             documentSymbolProvider: true,
+            colorProvider: true,
             referencesProvider: true,
             renameProvider: { prepareProvider: true },
             workspaceSymbolProvider: true,
@@ -360,6 +365,23 @@ connection.onDocumentSymbol((params) => {
     return documentSymbols(ctx.doc, ctx.file);
 });
 
+// colour swatches and the picker for layout colour attributes
+connection.onDocumentColor((params) => {
+    const ctx = docAndFile(params.textDocument.uri);
+    if (!ctx || fileRole(env().index, ctx.file).role !== "layout") return [];
+    try {
+        return layoutColors(ctx.doc);
+    } catch {
+        return [];
+    }
+});
+
+connection.onColorPresentation((params) => {
+    const ctx = docAndFile(params.textDocument.uri);
+    if (!ctx) return [];
+    return layoutColorPresentations(ctx.doc.getText(params.range), params.color);
+});
+
 connection.onReferences((params) => {
     const ctx = docAndFile(params.textDocument.uri);
     if (!ctx) return [];
@@ -374,7 +396,7 @@ connection.onReferences((params) => {
 connection.onPrepareRename((params) => {
     const ctx = docAndFile(params.textDocument.uri);
     if (!ctx) return null;
-    return prepareRename(refs, ctx.doc, ctx.file, ctx.doc.offsetAt(params.position));
+    return prepareRename(refs, ctx.doc, ctx.file, ctx.doc.offsetAt(params.position), textOf);
 });
 
 connection.onRenameRequest((params) => {

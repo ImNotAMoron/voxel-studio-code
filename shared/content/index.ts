@@ -14,8 +14,10 @@ import { parse as parseJsonc } from "jsonc-parser";
 import { parse as parseToml } from "smol-toml";
 import { sanitizeJson } from "./json";
 import { DependencyInfo, MODEL_EXTENSIONS, SOUND_EXTENSIONS, parseDependency } from "./pack";
+import { CLIENT_SCRIPT, PROJECT_FILE, ProjectInfo, START_SCRIPT, projectFields } from "./project";
 
 export * from "./pack";
+export * from "./project";
 
 export interface PackInfo {
     id: string;
@@ -247,6 +249,8 @@ export class ContentIndex {
     readonly entities = new Map<string, UnitDef>();
     /** Packs hidden by another pack with the same id (still linted). */
     shadowed: PackInfo[] = [];
+    /** Projects (folders with a project.toml) in the workspace, plus res/project. */
+    readonly projects: ProjectInfo[] = [];
     resPath?: string;
     private roots: string[] = [];
     private packDirs: string[] = [];
@@ -278,6 +282,7 @@ export class ContentIndex {
         this.packs.clear();
         this.data.clear();
         this.shadowed = [];
+        this.rebuildProjects();
         const folders: { dir: string; builtin: boolean }[] = [];
         const seen = new Set<string>();
         const add = (dir: string, builtin: boolean) => {
@@ -325,6 +330,74 @@ export class ContentIndex {
             this.data.set(info.id, this.indexPack(info));
         }
         this.rebuildUnits();
+    }
+
+    private rebuildProjects() {
+        this.projects.length = 0;
+        const seen = new Set<string>();
+        const add = (dir: string, builtin: boolean) => {
+            const key = pathKey(dir);
+            if (seen.has(key)) return;
+            seen.add(key);
+            const project = this.readProject(dir, builtin);
+            if (project) this.projects.push(project);
+        };
+        for (const root of this.roots) {
+            const visit = (dir: string, depth: number) => {
+                if (isFile(path.join(dir, PROJECT_FILE))) add(dir, false);
+                // packs don't contain projects
+                if (depth >= 8 || isFile(path.join(dir, "package.json")) && readPackageId(path.join(dir, "package.json"))) return;
+                for (const entry of readDir(dir)) {
+                    if (!entry.isDirectory() || entry.name.startsWith(".") || SKIP_DIRS.has(entry.name)) continue;
+                    visit(path.join(dir, entry.name), depth + 1);
+                }
+            };
+            visit(root, 0);
+        }
+        if (this.resPath) add(path.join(this.resPath, "project"), true);
+        for (const project of this.projects) {
+            if (this.resPath && isInside(project.root, this.resPath)) project.builtin = true;
+        }
+    }
+
+    private readProject(dir: string, builtin: boolean): ProjectInfo | undefined {
+        const file = path.join(dir, PROJECT_FILE);
+        if (!isFile(file)) return undefined;
+        const root = normalizePath(dir);
+        const start = path.join(root, START_SCRIPT);
+        const client = path.join(root, CLIENT_SCRIPT);
+        return {
+            root,
+            file: path.join(root, PROJECT_FILE),
+            ...projectFields(readTomlTolerant(file, this.text(file))),
+            contentDir: path.join(root, "content"),
+            startScript: isFile(start) ? start : undefined,
+            clientScript: isFile(client) ? client : undefined,
+            builtin,
+        };
+    }
+
+    /** The project whose folder contains `file` (deepest). */
+    projectForFile(file: string): ProjectInfo | undefined {
+        let best: ProjectInfo | undefined;
+        for (const project of this.projects) {
+            if (isInside(file, project.root) && (!best || project.root.length > best.root.length)) best = project;
+        }
+        return best;
+    }
+
+    /** project.toml, start.lua or project_client.lua at a project root. */
+    projectFile(file: string): { project: ProjectInfo; kind: "toml" | "start" | "client" } | undefined {
+        const project = this.projectForFile(file);
+        if (!project || pathKey(path.dirname(file)) !== pathKey(project.root)) return undefined;
+        const base = path.basename(file);
+        const kind = base === PROJECT_FILE ? "toml" : base === START_SCRIPT ? "start" : base === CLIENT_SCRIPT ? "client" : undefined;
+        return kind ? { project, kind } : undefined;
+    }
+
+    /** The project whose `content/` folder holds the pack. */
+    projectOfPack(pack: PackInfo): ProjectInfo | undefined {
+        return this.projects.find((p) => isInside(pack.root, p.contentDir) && pathKey(pack.root) !== pathKey(p.contentDir));
     }
 
     private findPackFolders(root: string): string[] {
@@ -618,7 +691,7 @@ export class ContentIndex {
     updateFile(file: string, text?: string) {
         const key = pathKey(file);
         if (text !== undefined) this.overlay.set(key, text);
-        if (path.basename(file) === "package.json") {
+        if (path.basename(file) === "package.json" || this.projectChange(file)) {
             this.rebuild();
             return;
         }
@@ -628,6 +701,17 @@ export class ContentIndex {
         this.rebuildUnits();
     }
 
+    /** project.toml edited, or a project script created or deleted: re-scan. */
+    private projectChange(file: string): boolean {
+        const base = path.basename(file);
+        if (base === PROJECT_FILE) return true;
+        if (base !== START_SCRIPT && base !== CLIENT_SCRIPT) return false;
+        const project = this.projects.find((p) => pathKey(p.root) === pathKey(path.dirname(file)));
+        if (!project) return false;
+        const known = base === START_SCRIPT ? project.startScript : project.clientScript;
+        return !known !== !isFile(file);
+    }
+
     /** Drop the unsaved overlay of a document (closed). */
     clearOverlay(file: string) {
         if (this.overlay.delete(pathKey(file))) this.updateFile(file);
@@ -635,7 +719,7 @@ export class ContentIndex {
 
     removeFile(file: string) {
         this.overlay.delete(pathKey(file));
-        if (path.basename(file) === "package.json") {
+        if (path.basename(file) === "package.json" || this.projectChange(file)) {
             this.rebuild();
             return;
         }
@@ -675,6 +759,11 @@ export class ContentIndex {
             if (this.packDirs.some((d) => pathKey(d) === pathKey(p.root))) return true;
             return this.roots.some((r) => isInside(p.root, r));
         });
+    }
+
+    /** Projects inside workspace roots (res/project only when a root contains it). */
+    lintableProjects(): ProjectInfo[] {
+        return this.projects.filter((p) => this.roots.some((r) => isInside(p.root, r)));
     }
 
     /** The pack, its (transitive) dependencies and core, in lookup priority order. */
