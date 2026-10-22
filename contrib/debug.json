@@ -1,0 +1,211 @@
+{
+    "activationEvents": [
+        "onDebugResolve:voxelcore",
+        "onDebugDynamicConfigurations:voxelcore",
+        "onDebugInitialConfigurations"
+    ],
+    "contributes": {
+        "breakpoints": [
+            {
+                "language": "lua"
+            }
+        ],
+        "debuggers": [
+            {
+                "type": "voxelcore",
+                "label": "VoxelCore",
+                "languages": [
+                    "lua"
+                ],
+                "configurationAttributes": {
+                    "launch": {
+                        "properties": {
+                            "mode": {
+                                "type": "string",
+                                "enum": [
+                                    "quickWorld",
+                                    "run",
+                                    "headless"
+                                ],
+                                "enumDescriptions": [
+                                    "Open the dev world with every workspace pack (like VoxelCore: Run Quick World)",
+                                    "Start the engine at the main menu",
+                                    "Run an app script without a window (set 'script')"
+                                ],
+                                "default": "quickWorld"
+                            },
+                            "world": {
+                                "type": "string",
+                                "description": "quickWorld: world name",
+                                "default": "vscode-dev"
+                            },
+                            "generator": {
+                                "type": "string",
+                                "description": "quickWorld: generator id, e.g. base:demo"
+                            },
+                            "seed": {
+                                "type": "string",
+                                "description": "quickWorld: seed of a new world"
+                            },
+                            "recreate": {
+                                "type": "boolean",
+                                "description": "quickWorld: delete the world first",
+                                "default": false
+                            },
+                            "script": {
+                                "type": "string",
+                                "description": "headless: the app script (.lua)"
+                            },
+                            "args": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "Extra engine arguments"
+                            },
+                            "port": {
+                                "type": "number",
+                                "description": "Debugger port (default: a free one)"
+                            },
+                            "waitForDebugger": {
+                                "type": "boolean",
+                                "default": true,
+                                "description": "quickWorld: load content only after the breakpoints are set, so breakpoints in load-time code and on_world_open are hit"
+                            }
+                        }
+                    },
+                    "attach": {
+                        "properties": {
+                            "port": {
+                                "type": "number",
+                                "description": "Port of an engine started with --dbg-server tcp:<port>. Empty: the engine run by this window"
+                            },
+                            "host": {
+                                "type": "string",
+                                "default": "127.0.0.1"
+                            }
+                        }
+                    }
+                },
+                "initialConfigurations": [
+                    {
+                        "type": "voxelcore",
+                        "request": "launch",
+                        "name": "VoxelCore: Debug Quick World",
+                        "mode": "quickWorld"
+                    }
+                ],
+                "configurationSnippets": [
+                    {
+                        "label": "VoxelCore: Debug Quick World",
+                        "description": "Open the dev world with the workspace packs and debug their Lua scripts",
+                        "body": {
+                            "type": "voxelcore",
+                            "request": "launch",
+                            "name": "VoxelCore: Debug Quick World",
+                            "mode": "quickWorld"
+                        }
+                    },
+                    {
+                        "label": "VoxelCore: Debug Headless Script",
+                        "description": "Run an app script without a window and debug it",
+                        "body": {
+                            "type": "voxelcore",
+                            "request": "launch",
+                            "name": "VoxelCore: Debug Headless Script",
+                            "mode": "headless",
+                            "script": "^\"\\${file}\""
+                        }
+                    },
+                    {
+                        "label": "VoxelCore: Attach",
+                        "description": "Attach to an engine started with --dbg-server",
+                        "body": {
+                            "type": "voxelcore",
+                            "request": "attach",
+                            "name": "VoxelCore: Attach",
+                            "port": 9000
+                        }
+                    }
+                ]
+            }
+        ],
+        "commands": [
+            {
+                "command": "voxelcore.debugQuickWorld",
+                "title": "Debug Quick World",
+                "category": "VoxelCore",
+                "icon": "$(debug-alt)"
+            },
+            {
+                "command": "voxelcore.attachDebugger",
+                "title": "Attach Debugger to Running Engine",
+                "category": "VoxelCore",
+                "icon": "$(debug)"
+            },
+            {
+                "command": "voxelcore.debugHeadlessScript",
+                "title": "Debug Lua Script Headless",
+                "category": "VoxelCore"
+            },
+            {
+                "command": "voxelcore.reloadContent",
+                "title": "Reload Content in the Running Engine",
+                "category": "VoxelCore",
+                "icon": "$(flame)"
+            }
+        ],
+        "menus": {
+            "view/title": [
+                {
+                    "command": "voxelcore.debugQuickWorld",
+                    "when": "view == voxelcore.engine",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "voxelcore.reloadContent",
+                    "when": "view == voxelcore.engine",
+                    "group": "navigation@5"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "voxelcore.attachDebugger",
+                    "when": "view == voxelcore.engine && viewItem == voxelcore.engine.hotreload",
+                    "group": "inline"
+                }
+            ],
+            "editor/title/run": [
+                {
+                    "command": "voxelcore.debugHeadlessScript",
+                    "when": "resourceLangId == lua && voxelcore.hasPacks",
+                    "group": "navigation@2"
+                }
+            ]
+        },
+        "configuration": {
+            "properties": {
+                "voxelcore.hotReload.enable": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Reload saved assets, modules and content in an engine started from VS Code. Runs start with `--dbg-server` (the window title shows *[debugging]*) and the quick-world script stays running to serve reload requests."
+                },
+                "voxelcore.hotReload.content": {
+                    "type": "string",
+                    "enum": [
+                        "ask",
+                        "auto",
+                        "off"
+                    ],
+                    "default": "ask",
+                    "enumDescriptions": [
+                        "Ask before reloading content (it reopens the world)",
+                        "Reload content on every save of a definition or script",
+                        "Never reload content automatically"
+                    ],
+                    "description": "What to do when a block/item/entity definition, script or layout is saved while the engine runs."
+                }
+            }
+        }
+    }
+}

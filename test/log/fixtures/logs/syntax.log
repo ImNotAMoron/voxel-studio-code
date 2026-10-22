@@ -1,0 +1,21 @@
+[I] 2026/10/22 11:01:08.127+0300 [      content-loader] loading pack [core]
+[I] 2026/10/22 11:01:08.140+0300 [      content-loader] loading pack [base]
+[I] 2026/10/22 11:01:08.160+0300 [    generator-loader] fragment tree0 has size [6, 9, 8]
+[I] 2026/10/22 11:01:08.161+0300 [    generator-loader] fragment tree1 has size [7, 12, 9]
+[I] 2026/10/22 11:01:08.162+0300 [    generator-loader] fragment tree2 has size [7, 16, 6]
+[I] 2026/10/22 11:01:08.164+0300 [    generator-loader] fragment tower has size [8, 18, 8]
+[I] 2026/10/22 11:01:08.165+0300 [    generator-loader] fragment coal_ore0 has size [4, 4, 4]
+[I] 2026/10/22 11:01:08.221+0300 [      content-loader] loading pack [broken]
+[E] 2026/10/22 11:01:08.233+0300 [block-content-loader] unknown model: cubee
+[E] 2026/10/22 11:01:08.235+0300 [block-content-loader] unknown culling mode: weird
+[E] 2026/10/22 11:01:08.235+0300 [block-content-loader] unknown rotation profile spin
+[E] 2026/10/22 11:01:08.237+0300 [ item-content-loader] broken:baditem: unknown icon type - weird
+[E] 2026/10/22 11:01:08.237+0300 [ item-content-loader] broken:baditem: unknown uses display mode - bad
+[I] 2026/10/22 11:01:08.249+0300 [           scripting] script (block) res:content/base/scripts/grass_block.lua
+[I] 2026/10/22 11:01:08.250+0300 [           scripting] script (block) res:content/base/scripts/wooden_door.lua
+[I] 2026/10/22 11:01:08.251+0300 [           scripting] script (block) res:content/base/scripts/sand.lua
+[I] 2026/10/22 11:01:08.253+0300 [           scripting] script (block) user:content/broken/scripts/syntaxerr.lua
+[E] 2026/10/22 11:01:08.253+0300 [           lua-debug] [string "core:modules/internal/debugging.lua"]:149: [string "script:logrec.app.lua"]:2: [string "broken:scripts/syntaxerr.lua"]:2: '(' expected near 'on_placed':
+	[string "core:scripts/stdlib.lua"]:146
+	[C]: in function "new_world"
+	[string "script:logrec.app.lua"]:2: in main chunk

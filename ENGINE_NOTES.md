@@ -107,3 +107,101 @@ useful. File/line references are to the VoxelCore repo.
 - **`aabb` model UVs** aren't cut to the box: every face shows the whole
   texture squashed (`BlocksRenderer::blockAABB`), and its bottom face uses a
   different basis than the cube's (rotated 180°).
+
+### Found while building log → Problems and the content explorer (§4.3, §3.10)
+
+Checked against real headless runs (`test/log/fixtures/logs/`).
+
+- **Parse error positions**: `parsing_error::errorLog` (`src/coders/commons.cpp`)
+  prints `line + 1`, but `BasicParser::line` already starts at 1, so the
+  reported line is one too far. The column is 0-based. The extension
+  corrects both.
+- **`error()` locations**: `error` is wrapped by
+  `res/modules/internal/debugging.lua:149`, which doesn't pass the level on.
+  Every `error("…")` message is reported as
+  `[string "core:modules/internal/debugging.lua"]:149: …` instead of the
+  caller's line. Only the traceback has the real location.
+- **Block enum errors have no context**: `unknown model: …`,
+  `unknown culling mode: …`, `unknown rotation profile …` and
+  `unknown grounding behaviour: …` (`BlockLoader.cpp`) don't name the block
+  or file (the item errors do). The extension finds the file by searching the
+  pack named by the preceding `loading pack [id]` line.
+- **`Unresolved blocks dependencies detected.`** (`ContentLoader.cpp`) names
+  neither the unit nor the missing parent. A single unloadable unit (bad
+  JSON, type error, missing parent, missing component, block-script syntax
+  error) aborts loading the whole content, so the world doesn't open.
+- **Headless app scripts that fail don't exit**: when a `--script` app
+  script throws (e.g. `app.new_world` fails on content errors), the error is
+  logged and the engine keeps running headless until killed. Observed
+  too: `app.new_world` with the name of an existing world hung without
+  logging anything.
+- **Weak dependencies don't order packs**: `resolve_dependencies` skips
+  `~weak` dependencies from the second pass on, so with `w` depending
+  `~a` (both enabled), the order is `w` before `a` whenever `a` has
+  unresolved dependencies of its own in the first pass. The docs only say
+  "weak dependency".
+
+### Found while building the debugger and hot reload (§4.4, §4.2)
+
+Checked against real engine runs over VC-DBG (`test/debug/`, headless; the
+asset paths also with a client run).
+
+- **`step` works once**: in `res/modules/internal/debugging.lua` the line
+  hook declares `local func` inside `if not dbg_step_into_func then … end`,
+  then sets `current_func = func` after the block, i.e. the global `func`
+  (nil). After the first step every `step` compares against nil and runs
+  until the next breakpoint. Fix: declare `func` before the `if`. The
+  adapter builds next / step out from `step-into-function` + stack depth
+  instead.
+- **`get-value` resumes after a step or `error()` pause**: only the
+  breakpoint path loops (`while debug.pull_events() do __pause() end`). The
+  step path calls `debug.pull_events()` once and returns, so a value
+  request runs the next line; the `error()` pause returns and raises.
+  Fix: use the same loop in both places. The adapter expands tables only at
+  breakpoint pauses.
+- **`pause` isn't implemented**: `DebuggingServer::performCommand` has no
+  `pause` branch ("unsupported command 'pause'"), though the spec lists it.
+  `step-into-function` sent while running pauses at the next Lua line, but
+  first inside `debugging.lua` itself (`pull_events`, line 125).
+- **A step onto a line with a breakpoint pauses twice**: the hook pauses for
+  the step, then checks breakpoints and pauses again (`breakpoint`) at the
+  same line.
+- **`error()` always pauses while a client is connected**: there's no
+  exception filter in the protocol. Clients that only want hot reload must
+  answer every `paused` with `resume`.
+- **No wait for the client**: `--dbg-server` doesn't block until a client
+  connects, so breakpoints in content scripts and `on_world_open` are
+  missed unless the app script waits (the extension's quick-world script
+  waits for a file the debugger writes).
+- **The spec's `locals` is a list**, not the object shown in
+  `debugging_protocol.md`: `[{name, index, type, short}]`.
+- **One message per frame**: `ClientConnection::read` returns after
+  reading the 4-byte length; the body is read on the next `update()`. Each
+  message costs about two frames.
+- **Hot reload paths**: `hot-reload` needs the path the asset was loaded
+  from (`user:content/<pack>/textures/gui/x.png`), not
+  `<pack>:textures/…` (that enqueues 0). Only standalone textures, models,
+  VCA animations and post effects call `attachToFile`; atlas textures
+  (`blocks`, `items`, `particles`), shaders, sounds and layouts can't be
+  reloaded.
+- **App scripts can't write to `user:`**: only `world:`, `export:` and
+  `config:` are writeable (`EnginePaths::isWriteable`), so the dev bridge
+  lives in `<userDir>/export/vscode/`.
+
+### Found while building asset hovers and locale checks (§3.9, §3.6)
+
+- **A broken locale file stops content loading**: `texts/<lang>.txt` is
+  parsed by `BasicParser` (`src/frontend/locale.cpp`) on every content load
+  (`Engine::onContentLoad`). A line without `=` or an unknown `\` escape
+  throws. With that language or the fallback (`en_US`) selected,
+  `app.new_world` fails with `non-closed string literal` (checked
+  headless), and the message names neither the pack nor the file. Other
+  languages' files aren't read, so their errors stay hidden until a player
+  picks that language.
+- **`base` has an untranslated block**: `base:coal_ore` (caption
+  `coal ore`) has no entry in any of base's `texts/*.txt` (fi_FI, ru_RU,
+  uk_UA, uz_UZ), while every other base block does.
+- **`base` ships no `en_US.txt`**: English captions are the ids
+  themselves (`util::id_to_caption`; `langs::get` returns the key when it
+  isn't found). So missing-translation checks compare a pack's non-fallback
+  languages with each other, not with `en_US`.

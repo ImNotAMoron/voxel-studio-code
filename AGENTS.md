@@ -20,7 +20,10 @@ modified by this work.
 
 **Status (2026-10-22):** the MVP is complete. All P0 features in
 FEATURES.md work: 413 tests pass, 11/11 checks pass in real VS Code, and the
-`.vsix` packages. Block (§5.4) and entity (§5.8) previews are done too.
+`.vsix` packages. Done since: block (§5.4) and entity (§5.8) previews,
+engine log → Problems (§4.3), content explorer (§3.10), references and
+rename (§3.5), hot reload (§4.2), the Lua debugger (§4.4), asset hovers
+(§3.9) and locale files (§3.6). Now 459 tests and 16/16 smoke checks.
 The next work is the remaining **P1** features (see "Where to continue"
 below).
 
@@ -71,7 +74,7 @@ Language Server* (port 6019) to debug `vcls`.
   that unit tests load. Pure logic goes in a separate file next to the
   vscode glue: `src/packs.manifest.ts`, `src/lua/settings.ts`,
   `src/schemas/associations.ts`, `src/run/userdir.ts`,
-  `src/scaffold/templates.ts`.
+  `src/scaffold/templates.ts`, `src/explorer/model.ts`.
 - **The engine is the source of truth.** Read the C++ loader or Lua
   runtime before encoding a rule, schema key or default. The docs are
   sometimes wrong (see ENGINE_NOTES.md). Cite the doc or source in rule
@@ -116,6 +119,47 @@ Language Server* (port 6019) to debug `vcls`.
 - Definition previews must port the engine's quirks too (inherited
   state-based variants, size → aabb, model naming): see ENGINE_NOTES.md and
   the comments in `shared/models/block.ts` / `entity.ts`.
+- The engine log format and error texts are matched by regexes in
+  `shared/log/problems.ts`. When you add a pattern, record a real log
+  (steps in the `test/log/log.test.ts` header) instead of writing one by
+  hand: several messages differ from the C++ source at first sight (Lua
+  prefixes, the `error()` wrapper location, parse positions off by one).
+- Headless app scripts that throw never exit (ENGINE_NOTES.md). Engine runs in
+  tests need a timeout; the smoke test's script ends with `app.quit()`.
+- `merge-contrib` keys menu entries (with `when`/`group`) by their whole
+  JSON, so one command can appear in several menu groups.
+- References: a new reference kind needs both extraction (`jsonRefKind` /
+  `luaCallKind` in `refs.ts`, or `extractRefs`) and resolution
+  (`resolveRef`). Find references and rename follow automatically. Any
+  `pack:name` string counts as a unit id, so exclude look-alikes (tag
+  names, TOML keys) at extraction.
+- VS Code runs `willRenameFiles` participants for file renames inside a
+  WorkspaceEdit too, our own rename edits included. `navigation.ts`
+  `ownRenames` skips those; keep it, or references get rewritten twice.
+- **VC-DBG quirks** (ENGINE_NOTES.md) shape `src/debug/session.ts`:
+  - the engine's `step` breaks after one use, so all stepping is built from
+    `step-into-function`;
+  - `get-value` at a step or `error()` pause runs the program on;
+  - there's no `pause`;
+  - every `error()` pauses while any client is connected (the hot-reload
+    keeper must resume);
+  - a step onto a breakpoint line pauses twice.
+
+  Test against the real engine (`test/debug/debug.test.ts`), not a mock:
+  each of these was found that way.
+- DAP `initialized` must come after launch/attach: VS Code sends
+  `setBreakpoints` right after it, and chunk names of headless scripts
+  (`script:<name>`) are known only once the launch resolved the script.
+- App scripts can only write to `world:`, `export:` and `config:`, which is
+  why the dev bridge lives in `<userDir>/export/vscode/`. Asset
+  `hot-reload` needs `user:content/<pack>/…` paths.
+- Locale semantics: the engine shows a missing key as the key itself, so
+  the fallback language (`en_US`) is never "missing" anything, and `base`
+  ships no `en_US.txt`. Only the selected language and the fallback are
+  parsed at runtime: errors in other files hide until someone switches.
+- Hover markdown images are data URIs (no cache dir in the server). Command
+  links must be added to `HOVER_COMMANDS` in `src/extension.ts`, or VS Code
+  won't run them.
 - Engine-dependent tests skip themselves when `../build/Debug/VoxelCore(.exe)`
   doesn't exist. They need `../packs/backrooms` as a real-world fixture pack.
 
@@ -123,19 +167,19 @@ Language Server* (port 6019) to debug `vcls`.
 
 P1 features from FEATURES.md, in a sensible order (each is independent):
 
-1. §3.5 navigation extras: find references and rename (definition,
-   completion and symbols already exist in `server/src/features/refs.ts`).
-2. §3.9 texture hover previews (scaled PNG in hover markdown) and gutter
-   thumbnails.
-3. §4.3 engine log → Problems (parse `latest.log` / task output; map
-   `pack:path` back to files with the content index).
-4. §4.2 hot reload and §4.4 debugger, both over the VC-DBG protocol
-   (`../doc/specs/debugging_protocol.md`). Write one socket client in
-   `src/debug/` and share it.
-5. §3.6 locale checks (keys are already indexed), §3.7 XML layout schema.
-6. §3.10 content explorer tree view; §5.3 VCA animation playback on top of
+1. §4.5 test explorer (debug profile = a `voxelcore` launch with
+   `mode: "headless"`) and §4.6 console bridge, which could also serve
+   module/content reload for *Run engine* (`src/hotreload/index.ts`).
+2. Locale extras: rename a unit's default caption key with the unit
+   (`ReferenceIndex.planRename` + `shared/content/locale.ts`), the
+   Translations webview.
+3. §5.3 VCA animation playback on top of
    the §5.8 skeleton view (`shared/models/entity.ts boneMatrices` takes the
    pose; reuse `webview/`).
+4. §3.7 XML layouts, then its P2 layout preview webview. XML `@key` texts
+   should get `translationsHover`, and XML textures `textureHover`. Add XML texture /
+   layout references to `extractRefs` in `server/src/features/references.ts`
+   then.
 
 Known gaps in what exists are listed per feature in FEATURES.md (status
 notes) and at the end of ARCHITECTURE.md.

@@ -1,0 +1,3 @@
+{
+    "components": ["broken:comp", "broken:missing_comp"]
+}

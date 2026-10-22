@@ -53,10 +53,41 @@ fs.copyFileSync(
 fs.mkdirSync(path.join(smoke, "models"), { recursive: true });
 fs.copyFileSync(path.join(engine, "res", "models", "stairs.vcm"), path.join(smoke, "models", "stairs.vcm"));
 fs.copyFileSync(path.join(engine, "res", "models", "block.vec3"), path.join(smoke, "models", "block.vec3"));
+// debugger (FEATURES.md §4.4): a headless app script with a breakpoint on line 3
+fs.mkdirSync(ws, { recursive: true });
+fs.writeFileSync(
+    path.join(ws, "dbg_app.lua"),
+    ["local function work(n)", "    local t = {a = n}", "    return n + 1", "end", "for i = 1, 100000 do", "    work(i)", "    app.tick()", "end", ""].join("\n")
+);
+// locale files (FEATURES.md §3.6): no translation of the smoke blocks' captions
+write("texts/ru_RU.txt", "# smoke\nsomething=что-то\n");
+// references + rename (FEATURES.md §3.5)
+write("scripts/refs.lua", 'local good = block.index("smoke:good")\n');
+// engine log → Problems (FEATURES.md §4.3): a world script error, run headless
+write("scripts/world.lua", 'function on_world_open()\n    error("smoke world error")\nend\n');
+fs.writeFileSync(
+    path.join(ws, "smoke_app.lua"),
+    [
+        'app.reconfig_packs({"base", "smoke"}, {})',
+        'app.new_world("smoke-log", "1", "core:default")',
+        "for i = 1, 3 do app.tick() end",
+        "app.quit()",
+        "",
+    ].join("\n")
+);
+const exe = path.join(engine, "build", "Debug", process.platform === "win32" ? "VoxelCore.exe" : "VoxelCore");
 fs.mkdirSync(path.join(ws, ".vscode"), { recursive: true });
 fs.writeFileSync(
     path.join(ws, ".vscode", "settings.json"),
-    JSON.stringify({ "voxelcore.resPath": path.join(engine, "res"), "voxelcore.configureLua": "never" }, null, 4)
+    JSON.stringify(
+        {
+            "voxelcore.resPath": path.join(engine, "res"),
+            "voxelcore.configureLua": "never",
+            ...(fs.existsSync(exe) ? { "voxelcore.executable": exe } : {}),
+        },
+        null,
+        4
+    )
 );
 
 const result = path.join(tmp, "result.json");

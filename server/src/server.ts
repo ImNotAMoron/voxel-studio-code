@@ -5,12 +5,16 @@ import * as path from "node:path";
 import {
     CodeActionKind, Diagnostic, DiagnosticSeverity, DiagnosticTag, DidChangeConfigurationNotification,
     FileChangeType, InitializeParams, InitializeResult, ProposedFeatures, TextDocumentSyncKind, TextDocuments,
-    createConnection,
+    WorkspaceEdit, createConnection,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { ContentIndex } from "../../shared/content/index";
 import { CREATE_TEXTURE_COMMAND, codeActions, writePlaceholderTexture } from "./features/codeActions";
 import { complete, definition, documentSymbols, hover } from "./features/language";
+import {
+    codeLenses, findReferences, prepareRename, rename, renameSymbol, symbolReferences, willRenameFiles, workspaceSymbols,
+} from "./features/navigation";
+import { ReferenceIndex, symbolOfFile } from "./features/references";
 import { collectMentions, createEnv, fileRole, lintDocument, lintPack } from "./linter";
 import { LintEnv } from "./rules/context";
 import { LintSettings, SeverityOverride, ruleHref } from "./rules/registry";
@@ -30,6 +34,7 @@ let workspaceRoots: string[] = [];
 let settings: ServerSettings = {};
 let index = new ContentIndex();
 const schemas = new SchemaStore();
+const refs = new ReferenceIndex(() => index, (file) => openDocFor(file)?.getText());
 let hasConfigurationCapability = false;
 let hasWorkspaceFoldersCapability = false;
 /** uri -> last published diagnostics count, to clear stale ones */
@@ -212,9 +217,18 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
             hoverProvider: true,
             definitionProvider: true,
             documentSymbolProvider: true,
+            referencesProvider: true,
+            renameProvider: { prepareProvider: true },
+            workspaceSymbolProvider: true,
+            codeLensProvider: { resolveProvider: false },
             codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix] },
             executeCommandProvider: { commands: [CREATE_TEXTURE_COMMAND] },
-            workspace: { workspaceFolders: { supported: true, changeNotifications: true } },
+            workspace: {
+                workspaceFolders: { supported: true, changeNotifications: true },
+                fileOperations: {
+                    willRename: { filters: [{ scheme: "file", pattern: { glob: "**/*.{json,png,vcm,obj,vec3,ogg,wav,lua,xml}" } }] },
+                },
+            },
         },
         serverInfo: { name: "vcls", version: "0.1.0" },
     };
@@ -344,6 +358,78 @@ connection.onDocumentSymbol((params) => {
     const ctx = docAndFile(params.textDocument.uri);
     if (!ctx) return [];
     return documentSymbols(ctx.doc, ctx.file);
+});
+
+connection.onReferences((params) => {
+    const ctx = docAndFile(params.textDocument.uri);
+    if (!ctx) return [];
+    try {
+        return findReferences(refs, ctx.doc, ctx.file, ctx.doc.offsetAt(params.position), params.context.includeDeclaration, textOf);
+    } catch (err) {
+        connection.console.error(`vcls references: ${(err as Error).stack ?? err}`);
+        return [];
+    }
+});
+
+connection.onPrepareRename((params) => {
+    const ctx = docAndFile(params.textDocument.uri);
+    if (!ctx) return null;
+    return prepareRename(refs, ctx.doc, ctx.file, ctx.doc.offsetAt(params.position));
+});
+
+connection.onRenameRequest((params) => {
+    const ctx = docAndFile(params.textDocument.uri);
+    if (!ctx) return null;
+    return rename(refs, ctx.doc, ctx.file, ctx.doc.offsetAt(params.position), params.newName, textOf);
+});
+
+connection.workspace.onWillRenameFiles((params) => {
+    const files = params.files
+        .map((f) => ({ from: uriToFile(f.oldUri), to: uriToFile(f.newUri) }))
+        .filter((f): f is { from: string; to: string } => !!f.from && !!f.to);
+    try {
+        return willRenameFiles(refs, files, textOf);
+    } catch (err) {
+        connection.console.error(`vcls willRenameFiles: ${(err as Error).stack ?? err}`);
+        return null;
+    }
+});
+
+connection.onWorkspaceSymbol((params) => workspaceSymbols(refs, params.query));
+
+connection.onCodeLens((params) => {
+    const file = uriToFile(params.textDocument.uri);
+    if (!file) return [];
+    try {
+        return codeLenses(refs, file, textOf);
+    } catch {
+        return [];
+    }
+});
+
+/** `voxelcore/renameSymbol`: without `newName` it describes the symbol (for the input box). */
+interface RenameSymbolResult {
+    error?: string;
+    name?: string;
+    id?: string;
+    kind?: string;
+    edit?: WorkspaceEdit;
+}
+
+// content explorer (src/explorer): references / rename of a file's symbol
+connection.onRequest("voxelcore/symbolReferences", (params: { uri: string }) => {
+    const file = uriToFile(params.uri);
+    const symbol = file ? symbolOfFile(index, file) : undefined;
+    return symbol ? symbolReferences(refs, symbol, false, textOf) : [];
+});
+
+connection.onRequest("voxelcore/renameSymbol", (params: { uri: string; newName?: string }): RenameSymbolResult => {
+    const file = uriToFile(params.uri);
+    const symbol = file ? symbolOfFile(index, file) : undefined;
+    if (!symbol) return { error: "not a VoxelCore definition or asset" };
+    if (params.newName === undefined) return { name: symbol.name, id: symbol.id, kind: symbol.kind };
+    const edit = renameSymbol(refs, symbol, params.newName, textOf);
+    return "code" in edit ? { error: edit.message } : { edit };
 });
 
 connection.onCodeAction((params) => {

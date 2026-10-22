@@ -11,9 +11,11 @@ const pkgPath = path.join(root, "package.json");
 const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
 const contribDir = path.join(root, "contrib");
 
+// menu entries (with `when`/`group`) may repeat a command in different groups
 const keyOf = (item) =>
     item && typeof item === "object"
-        ? item.id ?? item.command ?? item.language ?? item.viewType ?? item.type ??
+        ? (item.command && ("when" in item || "group" in item) ? JSON.stringify(item) : undefined) ??
+          item.id ?? item.command ?? item.language ?? item.viewType ?? item.type ??
           JSON.stringify(item)
         : JSON.stringify(item);
 

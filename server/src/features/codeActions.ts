@@ -56,6 +56,11 @@ export function writePlaceholderTexture(file: string) {
     if (!fs.existsSync(file)) fs.writeFileSync(file, PNG.sync.write(png));
 }
 
+/** A locale key or value as the engine reads it back (BasicParser escapes; `=` needs none in values, and keys can't contain it). */
+function escapeLocale(s: string): string {
+    return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n");
+}
+
 export function codeActions(env: LintEnv, doc: TextDocument, file: string, diagnostics: Diagnostic[]): CodeAction[] {
     const actions: CodeAction[] = [];
     const { pack, role } = fileRole(env.index, file);
@@ -145,6 +150,19 @@ export function codeActions(env: LintEnv, doc: TextDocument, file: string, diagn
                     edit: createFileEdit(scriptFile, scriptTemplate(createScript.kind, createScript.name)),
                 });
             }
+        }
+        const stubs = data.stubs as { key: string; value: string }[] | undefined;
+        if ((code === "VC0303" || code === "VC0304") && stubs?.length) {
+            // values are the fallback language's text, or the key (what the engine shows today)
+            const text = doc.getText();
+            const lines = [`# TODO: translate (${stubs.length} added by VoxelCore Tools)`, ...stubs.filter((s) => !s.key.includes("=")).map((s) => `${escapeLocale(s.key)}=${escapeLocale(s.value)}`)];
+            const prefix = text.length === 0 ? "" : text.endsWith("\n") ? "\n" : "\n\n";
+            actions.push({
+                title: `Add ${stubs.length} missing ${stubs.length === 1 ? "key" : "keys"} to translate`,
+                kind: CodeActionKind.QuickFix,
+                diagnostics: [diag],
+                edit: { changes: { [doc.uri]: [TextEdit.insert(doc.positionAt(text.length), prefix + lines.join("\n") + "\n")] } },
+            });
         }
         const createModule = data.createModule as { pack: string; name: string } | undefined;
         if (createModule) {

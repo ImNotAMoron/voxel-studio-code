@@ -1,0 +1,53 @@
+{
+    "contributes": {
+        "commands": [
+            {
+                "command": "voxelcore.findReferences",
+                "title": "Find VoxelCore References",
+                "category": "VoxelCore",
+                "icon": "$(references)"
+            },
+            {
+                "command": "voxelcore.renameSymbol",
+                "title": "Rename Content (Files and References)...",
+                "category": "VoxelCore"
+            },
+            {
+                "command": "voxelcore.showReferences",
+                "title": "Show References",
+                "category": "VoxelCore"
+            }
+        ],
+        "menus": {
+            "view/item/context": [
+                {
+                    "command": "voxelcore.findReferences",
+                    "when": "view == voxelcore.content && viewItem =~ /\\bfile\\b/",
+                    "group": "4_refs@1"
+                },
+                {
+                    "command": "voxelcore.renameSymbol",
+                    "when": "view == voxelcore.content && viewItem =~ /\\bfile\\b/",
+                    "group": "4_refs@2"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "voxelcore.findReferences",
+                    "when": "voxelcore.hasPacks && !explorerResourceIsFolder && resourceExtname =~ /^\\.(png|ogg|wav|vcm|obj|vec3|json|lua|xml)$/",
+                    "group": "4_search@9"
+                },
+                {
+                    "command": "voxelcore.renameSymbol",
+                    "when": "voxelcore.hasPacks && !explorerResourceIsFolder && resourceExtname =~ /^\\.(png|ogg|wav|vcm|obj|vec3|json|lua|xml)$/",
+                    "group": "7_modification@9"
+                }
+            ],
+            "commandPalette": [
+                { "command": "voxelcore.findReferences", "when": "voxelcore.hasPacks && editorIsOpen" },
+                { "command": "voxelcore.renameSymbol", "when": "voxelcore.hasPacks && editorIsOpen" },
+                { "command": "voxelcore.showReferences", "when": "false" }
+            ]
+        }
+    }
+}

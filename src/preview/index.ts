@@ -6,12 +6,13 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 
-import { ContentIndex, normalizePath } from "../../shared/content";
+import { normalizePath } from "../../shared/content";
 import { buildModel, modelFormat, modelTextures, type ModelData, type Span } from "../../shared/models";
 import type { HostToWebview, PreviewOptions, PreviewState, RenderStats, WebviewToHost } from "../../shared/models/protocol";
 import { highlightSpans } from "../../shared/models/selection";
 import { parseVcm, type VcmDocument } from "../../shared/vcm/parser";
 import { findResPath } from "../packs";
+import { workspaceIndex } from "../workspaceIndex";
 import { DefResolver, previewKind, type PreviewKind } from "./defs";
 import { findPackRoot, resolveTexture, resolveTextures, textureSearchRoots } from "./textures";
 
@@ -23,36 +24,6 @@ let textureVersion = 0;
 
 const pathKey = (file: string) => normalizePath(file).toLowerCase();
 
-/** One ContentIndex for all definition previews (parents, models, skeletons). */
-class PreviewIndex {
-    private index: ContentIndex | undefined;
-    private timer: ReturnType<typeof setTimeout> | undefined;
-
-    get(): ContentIndex {
-        if (!this.index) {
-            this.index = new ContentIndex({
-                resPath: findResPath(),
-                roots: (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath),
-            });
-        }
-        return this.index;
-    }
-
-    /** A file was created/deleted/renamed: rescan lazily. */
-    invalidate(onDone: () => void) {
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => {
-            this.index = undefined;
-            onDone();
-        }, 300);
-    }
-
-    dispose() {
-        clearTimeout(this.timer);
-    }
-}
-
-const previewIndex = new PreviewIndex();
 
 /** Live text of an open document (definition previews read parents with it). */
 function liveText(file: string): string | undefined {
@@ -217,7 +188,7 @@ class ModelView implements vscode.Disposable {
         if (!isDefKind(this.format)) return resolveTextures(modelTextures(model), this.uri.fsPath, resPath);
         // definitions: the content index's pack lookup order first, then the
         // simple resolver (the file's pack, res/, base)
-        const index = previewIndex.get();
+        const index = workspaceIndex.get();
         const pack = index.packForFile(this.uri.fsPath)?.id;
         const roots = textureSearchRoots(this.uri.fsPath, resPath);
         const files: Record<string, string> = {};
@@ -235,7 +206,7 @@ class ModelView implements vscode.Disposable {
         try {
             if (isDefKind(this.format)) {
                 if (this.uri.scheme !== "file") throw new Error("definition previews need a file on disk");
-                const build = new DefResolver(previewIndex.get(), liveText).build(this.format, this.uri.fsPath, this.options);
+                const build = new DefResolver(workspaceIndex.get(), liveText).build(this.format, this.uri.fsPath, this.options);
                 model = build.model;
                 this.dependencies = new Set(build.dependencies.map(pathKey));
             } else {
@@ -445,7 +416,6 @@ export function registerPreview(context: vscode.ExtensionContext): void {
     const onDefChange = (uri: vscode.Uri) => {
         for (const view of manager.viewsAffectedBy(uri)) view.schedule();
     };
-    const onDefCreateDelete = () => previewIndex.invalidate(() => manager.refreshAll());
     const updateContext = (editor: vscode.TextEditor | undefined) => {
         const kind = editor ? kindOf(editor.document.uri) : undefined;
         void vscode.commands.executeCommand("setContext", "voxelcore.previewable", isDefKind(kind));
@@ -461,12 +431,10 @@ export function registerPreview(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         manager,
-        previewIndex,
+        workspaceIndex.onDidChange(() => manager.refreshAll()),
         pngWatcher,
         defWatcher,
         defWatcher.onDidChange(onDefChange),
-        defWatcher.onDidCreate(onDefCreateDelete),
-        defWatcher.onDidDelete(onDefCreateDelete),
         vscode.window.onDidChangeActiveTextEditor(updateContext),
         vscode.commands.registerCommand("voxelcore.preview.inspect", () => manager.inspect()),
         pngWatcher.onDidChange(onPng),
@@ -507,9 +475,6 @@ export function registerPreview(context: vscode.ExtensionContext): void {
         }),
         vscode.window.onDidChangeTextEditorSelection((e) => {
             for (const view of manager.viewsFor(e.textEditor.document.uri)) view.syncSelection(e.textEditor);
-        }),
-        vscode.workspace.onDidChangeConfiguration((e) => {
-            if (e.affectsConfiguration("voxelcore.resPath")) previewIndex.invalidate(() => manager.refreshAll());
         })
     );
 }

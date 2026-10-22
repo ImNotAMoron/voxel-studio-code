@@ -93,6 +93,12 @@ const rules: RuleInfo[] = [
     { id: "VC0224", severity: "error", title: "invalid func expression", doc: "doc/en/vca.md#expression-curves" },
     { id: "VC0225", severity: "warning", title: "incomplete keyframe", doc: "doc/en/vca.md#keyframe-curves" },
     { id: "VC0226", severity: "warning", title: "invalid rotation-order", doc: "doc/en/vca.md#metadata" },
+    // locale files (texts/<lang>.txt)
+    { id: "VC0300", severity: "error", title: "locale file parse error", doc: "src/frontend/locale.cpp" },
+    { id: "VC0301", severity: "warning", title: "duplicate locale key", doc: "src/frontend/locale.cpp" },
+    { id: "VC0302", severity: "warning", title: "locale file for an unknown language", doc: "res/texts/langs.json" },
+    { id: "VC0303", severity: "hint", title: "keys missing compared to the pack's other languages", doc: "src/frontend/locale.cpp" },
+    { id: "VC0304", severity: "hint", title: "caption without a translation", doc: "src/util/stringutil.cpp" },
 ];
 
 export const RULES = new Map(rules.map((r) => [r.id, r]));

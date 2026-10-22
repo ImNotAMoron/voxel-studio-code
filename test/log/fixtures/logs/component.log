@@ -1,0 +1,33 @@
+[I] 2026/10/22 11:01:32.821+0300 [      content-loader] loading pack [core]
+[I] 2026/10/22 11:01:32.835+0300 [      content-loader] loading pack [base]
+[I] 2026/10/22 11:01:32.856+0300 [    generator-loader] fragment tree0 has size [6, 9, 8]
+[I] 2026/10/22 11:01:32.857+0300 [    generator-loader] fragment tree1 has size [7, 12, 9]
+[I] 2026/10/22 11:01:32.859+0300 [    generator-loader] fragment tree2 has size [7, 16, 6]
+[I] 2026/10/22 11:01:32.860+0300 [    generator-loader] fragment tower has size [8, 18, 8]
+[I] 2026/10/22 11:01:32.861+0300 [    generator-loader] fragment coal_ore0 has size [4, 4, 4]
+[I] 2026/10/22 11:01:32.922+0300 [      content-loader] loading pack [broken]
+[E] 2026/10/22 11:01:32.930+0300 [block-content-loader] unknown model: cubee
+[E] 2026/10/22 11:01:32.931+0300 [block-content-loader] unknown culling mode: weird
+[E] 2026/10/22 11:01:32.931+0300 [block-content-loader] unknown rotation profile spin
+[E] 2026/10/22 11:01:32.933+0300 [ item-content-loader] broken:baditem: unknown icon type - weird
+[E] 2026/10/22 11:01:32.933+0300 [ item-content-loader] broken:baditem: unknown uses display mode - bad
+[I] 2026/10/22 11:01:32.948+0300 [           scripting] script (block) res:content/base/scripts/grass_block.lua
+[I] 2026/10/22 11:01:32.949+0300 [           scripting] script (block) res:content/base/scripts/wooden_door.lua
+[I] 2026/10/22 11:01:32.950+0300 [           scripting] script (block) res:content/base/scripts/sand.lua
+[I] 2026/10/22 11:01:32.953+0300 [           scripting] script (block) user:content/broken/scripts/syntaxerr.lua
+[I] 2026/10/22 11:01:32.957+0300 [           scripting] script (item) res:content/base/scripts/bazalt_breaker.lua
+[I] 2026/10/22 11:01:32.959+0300 [           scripting] script (world) res:scripts/world.lua
+[I] 2026/10/22 11:01:32.959+0300 [           scripting] script (component) res:scripts/components/animator.lua
+[I] 2026/10/22 11:01:32.960+0300 [           scripting] script (component) res:scripts/components/mob.lua
+[I] 2026/10/22 11:01:32.960+0300 [           scripting] script (component) res:scripts/components/pathfinding.lua
+[I] 2026/10/22 11:01:32.961+0300 [           scripting] script (component) res:scripts/components/player.lua
+[I] 2026/10/22 11:01:32.963+0300 [           scripting] script (world) user:content/broken/scripts/world.lua
+[I] 2026/10/22 11:01:32.964+0300 [           scripting] script (component) user:content/broken/scripts/components/comp.lua
+[I] 2026/10/22 11:01:32.965+0300 [           scripting] script (world) res:content/base/scripts/world.lua
+[I] 2026/10/22 11:01:32.965+0300 [           scripting] script (component) res:content/base/scripts/components/drop.lua
+[I] 2026/10/22 11:01:32.966+0300 [           scripting] script (component) res:content/base/scripts/components/falling_block.lua
+[I] 2026/10/22 11:01:32.967+0300 [           scripting] script (component) res:content/base/scripts/components/player_animator.lua
+[E] 2026/10/22 11:01:32.968+0300 [           lua-debug] [string "core:modules/internal/debugging.lua"]:149: [string "script:logrec.app.lua"]:2: component broken:missing_comp is not available (required by entity broken:bot):
+	[string "core:scripts/stdlib.lua"]:146
+	[C]: in function "new_world"
+	[string "script:logrec.app.lua"]:2: in main chunk

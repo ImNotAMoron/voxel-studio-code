@@ -125,6 +125,33 @@ test("LSP over stdio publishes diagnostics and answers completion", async () => 
         // whole-workspace lint of not-open files reports the skipped `_draft.json`
         await client.waitFor((n) => n.method === "textDocument/publishDiagnostics" && n.params.uri.endsWith("_draft.json"));
 
+        // §3.5: references, rename, workspace symbols, code lens, willRenameFiles
+        assert.ok(init.capabilities.referencesProvider && init.capabilities.renameProvider.prepareProvider);
+        assert.ok(init.capabilities.workspace.fileOperations.willRename);
+        const world = path.join(GOODPACK, "scripts", "world.lua");
+        const worldUri = fileToUri(world);
+        const worldText = fs.readFileSync(world, "utf8");
+        client.notify("textDocument/didOpen", { textDocument: { uri: worldUri, languageId: "lua", version: 1, text: worldText } });
+        const lines = worldText.split("\n");
+        const line = lines.findIndex((l) => l.includes("goodpack:crate"));
+        const position = { line, character: lines[line].indexOf("goodpack:crate") + 10 };
+        const locations = await client.request("textDocument/references", { textDocument: { uri: worldUri }, position, context: { includeDeclaration: true } });
+        assert.ok(locations.some((l: { uri: string }) => l.uri.endsWith("tags.toml")));
+        assert.ok(locations.some((l: { uri: string }) => l.uri.endsWith("blocks/crate.json")), "declaration included");
+        const prep = await client.request("textDocument/prepareRename", { textDocument: { uri: worldUri }, position });
+        assert.equal(prep.placeholder, "crate");
+        const edit = await client.request("textDocument/rename", { textDocument: { uri: worldUri }, position, newName: "box" });
+        assert.ok(edit.documentChanges.some((c: { kind?: string; newUri?: string }) => c.kind === "rename" && !!c.newUri?.endsWith("blocks/box.json")));
+        assert.ok(edit.changeAnnotations["voxelcore.unitRename"]);
+        const symbols = await client.request("workspace/symbol", { query: "crate" });
+        assert.ok(symbols.some((s: { name: string }) => s.name === "goodpack:crate"));
+        const lenses = await client.request("textDocument/codeLens", { textDocument: { uri: fileToUri(path.join(GOODPACK, "modules", "util.lua")) } });
+        assert.equal(lenses[0].command.title, "2 references");
+        const will = await client.request("workspace/willRenameFiles", {
+            files: [{ oldUri: fileToUri(path.join(GOODPACK, "modules", "util.lua")), newUri: fileToUri(path.join(GOODPACK, "modules", "helpers.lua")) }],
+        });
+        assert.equal(will.documentChanges.length, 2);
+
         await client.request("shutdown", null);
         client.notify("exit", null);
     } catch (e) {

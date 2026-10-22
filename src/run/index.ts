@@ -4,11 +4,15 @@ import * as cp from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { findExecutable, findResPath, findWorkspacePacks, isBuiltinPack, resolveVariables } from "../packs";
+import type { EngineLog } from "../log";
+import { engineChannels } from "../debug/channels";
+import { VcDbgClient, freePort } from "../debug/vcdbg";
+import { clearDebuggerReady } from "../hotreload/bridge";
 import { quickWorldScript, syncPackLinks } from "./userdir";
 
 export const TASK_TYPE = "voxelcore";
 
-interface VoxelCoreTaskDefinition extends vscode.TaskDefinition {
+export interface VoxelCoreTaskDefinition extends vscode.TaskDefinition {
     action: "run" | "quickWorld" | "headless";
     /** quickWorld */
     world?: string;
@@ -21,12 +25,16 @@ interface VoxelCoreTaskDefinition extends vscode.TaskDefinition {
     args?: string[];
 }
 
-let output: vscode.OutputChannel;
+let log: EngineLog;
 
-export function registerRun(context: vscode.ExtensionContext): void {
-    output = vscode.window.createOutputChannel("VoxelCore");
+export function registerRun(context: vscode.ExtensionContext, engineLog: EngineLog): void {
+    log = engineLog;
+    const watchLog = () => log.watch(resolveUserDir(false));
+    watchLog();
     context.subscriptions.push(
-        output,
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            if (e.affectsConfiguration("voxelcore.userDir") || e.affectsConfiguration("voxelcore.log.tail")) watchLog();
+        }),
         vscode.tasks.registerTaskProvider(TASK_TYPE, {
             provideTasks: () => [
                 createTask({ type: TASK_TYPE, action: "run" }, "Run engine"),
@@ -47,13 +55,12 @@ export function registerRun(context: vscode.ExtensionContext): void {
             if (env) await linkPacks(env, true);
         }),
         vscode.commands.registerCommand("voxelcore.openLog", async () => {
-            const env = await resolveEnvironment(false);
-            const log = env && path.join(env.userDir, "latest.log");
-            if (!log || !fs.existsSync(log)) {
+            const file = path.join(resolveUserDir(false), "latest.log");
+            if (!fs.existsSync(file)) {
                 vscode.window.showInformationMessage("No latest.log yet. Run the engine first.");
                 return;
             }
-            await vscode.window.showTextDocument(vscode.Uri.file(log), { preview: true });
+            await vscode.window.showTextDocument(vscode.Uri.file(file), { preview: true });
         })
     );
 
@@ -109,12 +116,21 @@ async function resolveEnvironment(interactive: boolean): Promise<Environment | u
         }
         return undefined;
     }
+    const userDir = resolveUserDir(true);
+    return { executable, resPath, userDir, storage: storagePath() };
+}
+
+function storagePath(): string {
     const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    const storage = storageRoot ?? path.join(folder ?? process.cwd(), ".voxelcore");
-    const configured = config.get<string>("userDir");
-    const userDir = configured ? resolveVariables(configured) : path.join(storage, "user");
-    fs.mkdirSync(userDir, { recursive: true });
-    return { executable, resPath, userDir, storage };
+    return storageRoot ?? path.join(folder ?? process.cwd(), ".voxelcore");
+}
+
+/** `voxelcore.userDir` or the default one in the workspace storage. */
+export function resolveUserDir(create: boolean): string {
+    const configured = vscode.workspace.getConfiguration("voxelcore").get<string>("userDir");
+    const userDir = configured ? resolveVariables(configured) : path.join(storagePath(), "user");
+    if (create) fs.mkdirSync(userDir, { recursive: true });
+    return userDir;
 }
 
 async function linkPacks(env: Environment, verbose: boolean): Promise<string[]> {
@@ -123,7 +139,7 @@ async function linkPacks(env: Environment, verbose: boolean): Promise<string[]> 
         env.userDir,
         packs.map((p) => ({ id: p.id, root: p.root.fsPath }))
     );
-    output.appendLine(
+    log.channel.info(
         `[packs] user dir ${env.userDir}: linked ${report.linked.join(", ") || "-"}; ` +
             `unchanged ${report.unchanged.join(", ") || "-"}; removed ${report.removed.join(", ") || "-"}`
     );
@@ -152,8 +168,24 @@ function createTask(def: VoxelCoreTaskDefinition, name: string, scope?: vscode.T
     return task;
 }
 
-async function buildArgs(def: VoxelCoreTaskDefinition, env: Environment, packs: string[]): Promise<string[] | undefined> {
+/** The `--script` argument, if any. */
+function scriptOf(args: string[]): string | undefined {
+    const i = args.indexOf("--script");
+    return i >= 0 ? args[i + 1] : undefined;
+}
+
+interface DevOptions {
+    /** `--dbg-server tcp:<port>` */
+    debugPort?: number;
+    /** quickWorld: the app script serves dev bridge requests (hot reload). */
+    bridge?: boolean;
+    /** quickWorld: the app script waits for the debugger's breakpoints. */
+    waitForDebugger?: boolean;
+}
+
+async function buildArgs(def: VoxelCoreTaskDefinition, env: Environment, packs: string[], dev: DevOptions = {}): Promise<string[] | undefined> {
     const args = ["--res", env.resPath, "--dir", env.userDir];
+    if (dev.debugPort) args.push("--dbg-server", `tcp:${dev.debugPort}`);
     if (def.action === "quickWorld") {
         const script = path.join(env.storage, "scripts", "quick_world.lua");
         fs.mkdirSync(path.dirname(script), { recursive: true });
@@ -165,6 +197,8 @@ async function buildArgs(def: VoxelCoreTaskDefinition, env: Environment, packs: 
                 generator: def.generator ?? (await defaultGenerator(env)),
                 packs,
                 recreate: def.recreate ?? false,
+                bridge: dev.bridge,
+                waitForDebugger: dev.waitForDebugger,
             })
         );
         args.push("--script", script);
@@ -236,6 +270,51 @@ async function runHeadlessScript(uri?: vscode.Uri) {
     );
 }
 
+export interface PreparedEngine {
+    executable: string;
+    args: string[];
+    userDir: string;
+    packs: string[];
+    /** The app script (`--script`), if any. */
+    script?: string;
+    /** Dev bridge requests are served (quick world). */
+    bridge: boolean;
+}
+
+/** Links the packs and builds the command line (tasks and debug launches). */
+export async function prepareEngine(def: VoxelCoreTaskDefinition, dev: DevOptions = {}): Promise<PreparedEngine | undefined> {
+    const env = await resolveEnvironment(true);
+    if (!env) return undefined;
+    const packs = await linkPacks(env, false);
+    if (dev.waitForDebugger) clearDebuggerReady(env.userDir);
+    const args = await buildArgs(def, env, packs, dev);
+    if (!args) return undefined;
+    return { executable: env.executable, args, userDir: env.userDir, packs, script: scriptOf(args), bridge: def.action === "quickWorld" && !!dev.bridge };
+}
+
+export function startEngineSession(prepared: PreparedEngine) {
+    return log.startSession({ userDir: prepared.userDir, script: prepared.script });
+}
+
+export function hotReloadEnabled(): boolean {
+    return vscode.workspace.getConfiguration("voxelcore").get<boolean>("hotReload.enable", true);
+}
+
+/** Keeps a VC-DBG connection to a run for hot reload (src/debug/channels.ts). */
+async function keepConnection(child: cp.ChildProcess, port: number, prepared: PreparedEngine, label: string) {
+    try {
+        const client = await VcDbgClient.connect(port, { isAlive: () => child.exitCode === null, disconnectAction: "resume" });
+        if (child.exitCode !== null) {
+            client.close();
+            return;
+        }
+        engineChannels.add({ port, userDir: prepared.userDir, bridge: prepared.bridge, label, client }, "keeper");
+        child.once("exit", () => client.close());
+    } catch (err) {
+        log.channel.warn(`[hot reload] no debugger connection: ${(err as Error).message}`);
+    }
+}
+
 /** Pseudoterminal that prepares the user dir and runs the engine. */
 class EngineTerminal implements vscode.Pseudoterminal {
     private writeEmitter = new vscode.EventEmitter<string>();
@@ -252,29 +331,36 @@ class EngineTerminal implements vscode.Pseudoterminal {
 
     async open(): Promise<void> {
         try {
-            const env = await resolveEnvironment(true);
-            if (!env) {
+            // hot reload (§4.2) talks to the engine over VC-DBG; headless scripts run as they are
+            const hot = hotReloadEnabled() && this.def.action !== "headless";
+            const debugPort = hot ? await freePort() : undefined;
+            const prepared = await prepareEngine(this.def, { debugPort, bridge: hot });
+            if (!prepared) {
                 this.write("VoxelCore: engine not configured.\n");
                 this.closeEmitter.fire(1);
                 return;
             }
-            const packs = await linkPacks(env, false);
-            const args = await buildArgs(this.def, env, packs);
-            if (!args) {
-                this.closeEmitter.fire(1);
-                return;
-            }
-            this.write(`> ${env.executable} ${args.map((a) => (a.includes(" ") ? `"${a}"` : a)).join(" ")}\n`);
+            const { executable, args, packs } = prepared;
+            this.write(`> ${executable} ${args.map((a) => (a.includes(" ") ? `"${a}"` : a)).join(" ")}\n`);
             this.write(`  packs: ${packs.join(", ") || "(none)"}\n\n`);
-            const child = cp.spawn(env.executable, args, { cwd: path.dirname(env.executable) });
+            const session = startEngineSession(prepared);
+            const child = cp.spawn(executable, args, { cwd: path.dirname(executable) });
             this.process = child;
-            child.stdout?.on("data", (data: Buffer) => this.write(data.toString()));
-            child.stderr?.on("data", (data: Buffer) => this.write(data.toString()));
+            if (debugPort) void keepConnection(child, debugPort, prepared, this.def.action === "quickWorld" ? "quick world" : "engine");
+            const onData = (data: Buffer) => {
+                const text = data.toString();
+                this.write(text);
+                session.feed(text);
+            };
+            child.stdout?.on("data", onData);
+            child.stderr?.on("data", onData);
             child.on("error", (err) => {
+                session.end();
                 this.write(`\nfailed to start: ${err.message}\n`);
                 this.closeEmitter.fire(1);
             });
             child.on("exit", (code) => {
+                session.end();
                 this.write(`\nVoxelCore exited with code ${code ?? "?"}\n`);
                 this.closeEmitter.fire(code ?? 0);
             });

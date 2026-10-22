@@ -1,0 +1,184 @@
+{
+    "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "voxelcore",
+                    "title": "VoxelCore",
+                    "icon": "media/voxelcore.svg"
+                }
+            ]
+        },
+        "views": {
+            "voxelcore": [
+                {
+                    "id": "voxelcore.content",
+                    "name": "Content",
+                    "icon": "media/voxelcore.svg",
+                    "contextualTitle": "VoxelCore"
+                },
+                {
+                    "id": "voxelcore.dependencies",
+                    "name": "Dependencies",
+                    "visibility": "collapsed"
+                },
+                {
+                    "id": "voxelcore.engine",
+                    "name": "Engine"
+                }
+            ]
+        },
+        "viewsWelcome": [
+            {
+                "view": "voxelcore.content",
+                "contents": "No VoxelCore content packs in this workspace. A pack is a folder with a package.json that has an \"id\".\n[New Content Pack](command:voxelcore.newPack)"
+            },
+            {
+                "view": "voxelcore.dependencies",
+                "contents": "No workspace content packs."
+            }
+        ],
+        "commands": [
+            {
+                "command": "voxelcore.explorer.refresh",
+                "title": "Refresh",
+                "category": "VoxelCore",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "voxelcore.explorer.copyId",
+                "title": "Copy Content ID",
+                "category": "VoxelCore"
+            },
+            {
+                "command": "voxelcore.explorer.openPreview",
+                "title": "Open Preview",
+                "category": "VoxelCore",
+                "icon": "$(preview)"
+            },
+            {
+                "command": "voxelcore.explorer.reveal",
+                "title": "Reveal in Explorer View",
+                "category": "VoxelCore"
+            },
+            {
+                "command": "voxelcore.explorer.revealInOS",
+                "title": "Reveal in File Explorer",
+                "category": "VoxelCore"
+            },
+            {
+                "command": "voxelcore.showEngineOutput",
+                "title": "Show Engine Output",
+                "category": "VoxelCore",
+                "icon": "$(output)"
+            },
+            {
+                "command": "voxelcore.clearRuntimeProblems",
+                "title": "Clear Engine Problems",
+                "category": "VoxelCore",
+                "icon": "$(clear-all)"
+            }
+        ],
+        "menus": {
+            "view/title": [
+                {
+                    "command": "voxelcore.explorer.refresh",
+                    "when": "view == voxelcore.content || view == voxelcore.dependencies",
+                    "group": "navigation@9"
+                },
+                {
+                    "command": "voxelcore.runQuickWorld",
+                    "when": "view == voxelcore.engine",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "voxelcore.run",
+                    "when": "view == voxelcore.engine",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "voxelcore.showEngineOutput",
+                    "when": "view == voxelcore.engine",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "voxelcore.clearRuntimeProblems",
+                    "when": "view == voxelcore.engine",
+                    "group": "navigation@4"
+                },
+                {
+                    "command": "voxelcore.newPack",
+                    "when": "view == voxelcore.content",
+                    "group": "1_new"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "voxelcore.explorer.openPreview",
+                    "when": "view == voxelcore.content && viewItem =~ /\\bpreviewable\\b/",
+                    "group": "inline"
+                },
+                {
+                    "command": "voxelcore.explorer.openPreview",
+                    "when": "view == voxelcore.content && viewItem =~ /\\bpreviewable\\b/",
+                    "group": "1_open@1"
+                },
+                {
+                    "command": "voxelcore.explorer.copyId",
+                    "when": "view == voxelcore.content && (viewItem =~ /\\bid\\b/ || viewItem == voxelcore.pack)",
+                    "group": "2_copy@1"
+                },
+                {
+                    "command": "voxelcore.explorer.reveal",
+                    "when": "view == voxelcore.content && (viewItem =~ /\\bfile\\b/ || viewItem == voxelcore.pack)",
+                    "group": "3_reveal@1"
+                },
+                {
+                    "command": "voxelcore.newBlock",
+                    "when": "view == voxelcore.content && viewItem == voxelcore.pack",
+                    "group": "1_new@1"
+                },
+                {
+                    "command": "voxelcore.newItem",
+                    "when": "view == voxelcore.content && viewItem == voxelcore.pack",
+                    "group": "1_new@2"
+                },
+                {
+                    "command": "voxelcore.newEntity",
+                    "when": "view == voxelcore.content && viewItem == voxelcore.pack",
+                    "group": "1_new@3"
+                },
+                {
+                    "command": "voxelcore.explorer.revealInOS",
+                    "when": "view == voxelcore.engine && viewItem =~ /^voxelcore\\.engine\\.(exe|res|user|log)$/",
+                    "group": "1_reveal@1"
+                },
+                {
+                    "command": "voxelcore.openLog",
+                    "when": "view == voxelcore.engine && viewItem == voxelcore.engine.log",
+                    "group": "inline"
+                }
+            ],
+            "commandPalette": [
+                { "command": "voxelcore.explorer.copyId", "when": "false" },
+                { "command": "voxelcore.explorer.openPreview", "when": "false" },
+                { "command": "voxelcore.explorer.reveal", "when": "false" },
+                { "command": "voxelcore.explorer.revealInOS", "when": "false" }
+            ]
+        },
+        "configuration": {
+            "properties": {
+                "voxelcore.log.tail": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Follow `<userDir>/latest.log` to show engine output and map engine errors to the Problems panel for engines started outside VS Code with the same user dir (`voxelcore.userDir`)."
+                }
+            }
+        }
+    },
+    "activationEvents": [
+        "onView:voxelcore.content",
+        "onView:voxelcore.dependencies",
+        "onView:voxelcore.engine"
+    ]
+}

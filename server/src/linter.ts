@@ -12,11 +12,12 @@ import {
 import { LintSettings } from "./rules/registry";
 import { Report, VcDiagnostic, jsonErrorMessage, parseJsonDoc } from "./rules/report";
 import { lintVca, lintVcm } from "./rules/vcm";
+import { lintLocale } from "./rules/locale";
 import { SchemaStore } from "./schemas";
 
 export type FileRole =
     | "package" | "content" | "block" | "item" | "entity" | "material" | "skeleton" | "generator"
-    | "biomes" | "structures" | "tags" | "preload" | "lua" | "vcm" | "vca" | "skipped" | "other";
+    | "biomes" | "structures" | "tags" | "preload" | "lua" | "vcm" | "vca" | "locale" | "skipped" | "other";
 
 export function relPath(pack: PackInfo, file: string): string {
     return path.relative(pack.root, file).split(path.sep).join("/");
@@ -58,6 +59,7 @@ export function fileRole(index: ContentIndex, file: string): { pack?: PackInfo; 
             if (base === "structures.toml") return { pack, role: "structures", rel };
         }
     }
+    if (parts[0] === "texts" && parts.length === 2 && ext === ".txt") return { pack, role: "locale", rel };
     if (ext === ".lua") return { pack, role: "lua", rel };
     if (ext === ".vcm") return { pack, role: "vcm", rel };
     if (ext === ".vca") return { pack, role: "vca", rel };
@@ -122,6 +124,7 @@ export function lintDocument(env: LintEnv, file: string, text: string, options: 
                 break;
             case "vcm": lintVcm(ctx); break;
             case "vca": lintVca(ctx); break;
+            case "locale": lintLocale(ctx); break;
         }
     } catch (err) {
         // a rule crash must never take the server down

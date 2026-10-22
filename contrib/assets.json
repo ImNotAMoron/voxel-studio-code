@@ -1,0 +1,46 @@
+{
+    "contributes": {
+        "languages": [
+            {
+                "id": "vclang",
+                "aliases": ["VoxelCore Locale", "vclang"],
+                "filenamePatterns": ["**/texts/*.txt"],
+                "configuration": "./languages/vclang.language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "vclang",
+                "scopeName": "source.vclang",
+                "path": "./syntaxes/vclang.tmLanguage.json"
+            }
+        ],
+        "commands": [
+            {
+                "command": "voxelcore.openFile",
+                "title": "Open Asset",
+                "category": "VoxelCore"
+            },
+            {
+                "command": "voxelcore.previewFile",
+                "title": "Preview Asset",
+                "category": "VoxelCore"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                { "command": "voxelcore.openFile", "when": "false" },
+                { "command": "voxelcore.previewFile", "when": "false" }
+            ]
+        },
+        "configuration": {
+            "properties": {
+                "voxelcore.gutterThumbnails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show a texture thumbnail in the gutter next to texture references in definitions and VCM models."
+                }
+            }
+        }
+    }
+}

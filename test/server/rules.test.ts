@@ -123,6 +123,11 @@ const EXPECTED: [string, string, RegExp?][] = [
     ["VC0224", "errpack/animation/bad.vca", /'\.\.'/],
     ["VC0225", "errpack/animation/bad.vca", /tangents/],
     ["VC0226", "errpack/animation/bad.vca"],
+    ["VC0300", "errpack/texts/de_DE.txt", /non-closed string literal/],
+    ["VC0301", "errpack/texts/ru_RU.txt", /'shared': line 3 overrides/],
+    ["VC0302", "errpack/texts/xx_XX.txt", /never loaded/],
+    ["VC0303", "errpack/texts/ru_RU.txt", /'only_de'/],
+    ["VC0304", "errpack/texts/ru_RU.txt", /'bad'/],
 ];
 
 for (const [code, file, pattern] of EXPECTED) {
@@ -205,7 +210,8 @@ for (const [name, dir] of [["base", BASE], ["backrooms", BACKROOMS]] as const) {
         const { diagnostics } = lintDirs([dir]);
         const noisy = diagnostics.filter((d) => d.severity === "error" || d.severity === "warning");
         assert.deepEqual(noisy.map(describe), []);
-        // only deliberate hints/infos: icon size, unused assets
-        for (const d of diagnostics) assert.ok(["VC0006", "VC0060", "VC0061", "VC0062", "VC0063", "VC0012", "VC0208"].includes(d.code), describe(d));
+        // only deliberate hints/infos: icon size, unused assets, untranslated captions
+        // (base: 'coal ore' has no translation, ENGINE_NOTES.md)
+        for (const d of diagnostics) assert.ok(["VC0006", "VC0060", "VC0061", "VC0062", "VC0063", "VC0012", "VC0208", "VC0304"].includes(d.code), describe(d));
     });
 }

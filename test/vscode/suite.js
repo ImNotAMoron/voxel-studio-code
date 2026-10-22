@@ -155,5 +155,158 @@ exports.run = async function run() {
         return `${list.items.length} items`;
     });
 
+    await check("content explorer views", async () => {
+        await vscode.commands.executeCommand("workbench.view.extension.voxelcore");
+        const info = await waitFor("explorer data", async () => {
+            const i = await vscode.commands.executeCommand("voxelcore.explorer.inspect");
+            return i && i.packs.smoke && i.packs.backrooms ? i : undefined;
+        });
+        if (!(info.packs.smoke.blocks >= 3)) throw new Error(JSON.stringify(info.packs.smoke));
+        if (info.dependencies < 2) throw new Error(`dependencies view: ${info.dependencies} packs`);
+        if (!info.engine.some((r) => r.startsWith("Resources: ") && !r.includes("not found"))) throw new Error(info.engine.join(" | "));
+        return `smoke ${JSON.stringify(info.packs.smoke)}; ${info.engine.join(" | ")}`;
+    });
+
+    await check("engine log mapped to Problems", async () => {
+        const world = path.join(root, "smoke", "scripts", "world.lua");
+        const uri = vscode.Uri.file(world);
+        const runtime = () => vscode.languages.getDiagnostics(uri).filter((d) => d.source === "VoxelCore engine");
+        // synthetic log line: resolution and the diagnostic collection
+        await vscode.commands.executeCommand(
+            "voxelcore.log.feed",
+            '[E] 2026/10/22 11:02:03.350+0300 [           lua-debug] error in event (smoke:.worldopen) handler: [string "core:modules/internal/debugging.lua"]:149: fed\n' +
+                "stack traceback:\n" +
+                '\t[string "smoke:scripts/world.lua"]:2: in function <[string "smoke:scripts/world.lua"]:1>\n'
+        );
+        const fed = runtime();
+        if (fed.length !== 1 || fed[0].range.start.line !== 1 || fed[0].message !== "fed") {
+            throw new Error(`fed: ${JSON.stringify(fed.map((d) => [d.range.start.line, d.message]))}`);
+        }
+        const settings = vscode.workspace.getConfiguration("voxelcore");
+        if (!settings.get("executable")) return "fed log ok; engine run skipped (no build/Debug executable)";
+        // a real headless run through the voxelcore task
+        const script = path.join(root, "smoke_app.lua");
+        const ended = new Promise((resolve) => {
+            const sub = vscode.tasks.onDidEndTask((e) => {
+                if (e.execution.task.definition.action === "headless") {
+                    sub.dispose();
+                    resolve();
+                }
+            });
+        });
+        await vscode.commands.executeCommand("voxelcore.runHeadlessScript", vscode.Uri.file(script));
+        const diags = await waitFor("engine diagnostics", () => {
+            const d = runtime();
+            return d.some((x) => x.message === "smoke world error") ? d : undefined;
+        }, 90000);
+        await Promise.race([ended, sleep(30000)]);
+        return diags.map((d) => `${path.basename(world)}:${d.range.start.line + 1} ${d.message}`).join(" | ");
+    });
+
+    await check("asset hovers, gutter thumbnails, locale files", async () => {
+        const goodUri = vscode.Uri.file(path.join(root, "smoke", "blocks", "good.json"));
+        const goodDoc = await vscode.workspace.openTextDocument(goodUri);
+        await vscode.window.showTextDocument(goodDoc);
+        const at = goodDoc.positionAt(goodDoc.getText().indexOf("stone_tex") + 2);
+        const hovers = await waitFor("texture hover", async () => {
+            const h = await vscode.commands.executeCommand("vscode.executeHoverProvider", goodUri, at);
+            return h && h.some((x) => x.contents.some((c) => /data:image\/png;base64/.test(c.value))) ? h : undefined;
+        });
+        const md = hovers.flatMap((h) => h.contents).find((c) => /data:image/.test(c.value));
+        if (!md.isTrusted || !md.isTrusted.enabledCommands.includes("voxelcore.openFile")) throw new Error(`hover not trusted: ${JSON.stringify(md.isTrusted)}`);
+        const gutter = await waitFor("gutter icons", async () => {
+            const g = await vscode.commands.executeCommand("voxelcore.thumbnails.inspect", goodUri);
+            return g && g.length && g[0].icon && fs.existsSync(g[0].icon) ? g : undefined;
+        });
+        const localeUri = vscode.Uri.file(path.join(root, "smoke", "texts", "ru_RU.txt"));
+        const localeDoc = await vscode.workspace.openTextDocument(localeUri);
+        await vscode.window.showTextDocument(localeDoc);
+        if (localeDoc.languageId !== "vclang") throw new Error(`languageId=${localeDoc.languageId}`);
+        const diags = await waitFor("VC0304", () => {
+            const d = vscode.languages.getDiagnostics(localeUri).filter((x) => x.code && x.code.value === "VC0304");
+            return d.length ? d : undefined;
+        }, 30000);
+        const symbols = await vscode.commands.executeCommand("vscode.executeDocumentSymbolProvider", localeUri);
+        if (!symbols || symbols[0].name !== "smoke") throw new Error(`outline: ${JSON.stringify(symbols)}`);
+        return `hover image + trusted links, ${gutter.length} gutter icon(s), ${diags[0].message.slice(0, 80)}`;
+    });
+
+    await check("debugger stops at a breakpoint", async () => {
+        if (!vscode.workspace.getConfiguration("voxelcore").get("executable")) return "skipped (no build/Debug executable)";
+        const script = path.join(root, "dbg_app.lua");
+        const uri = vscode.Uri.file(script);
+        const events = [];
+        const tracker = vscode.debug.registerDebugAdapterTrackerFactory("voxelcore", {
+            createDebugAdapterTracker: () => ({ onDidSendMessage: (m) => m.type === "event" && events.push(m) }),
+        });
+        vscode.debug.addBreakpoints([new vscode.SourceBreakpoint(new vscode.Location(uri, new vscode.Position(2, 0)))]);
+        try {
+            const started = await vscode.debug.startDebugging(vscode.workspace.workspaceFolders[0], {
+                type: "voxelcore", request: "launch", name: "smoke debug", mode: "headless", script,
+            });
+            if (!started) throw new Error("startDebugging returned false");
+            const stopped = await waitFor("stopped event", () => events.find((e) => e.event === "stopped"), 60000);
+            const session = vscode.debug.activeDebugSession;
+            const { stackFrames } = await session.customRequest("stackTrace", { threadId: 1 });
+            const top = stackFrames[0];
+            if (top.line !== 3 || top.source.path.toLowerCase() !== script.toLowerCase()) throw new Error(JSON.stringify(top));
+            const { scopes } = await session.customRequest("scopes", { frameId: top.id });
+            const { variables } = await session.customRequest("variables", { variablesReference: scopes[0].variablesReference });
+            const names = variables.map((v) => v.name).join(",");
+            if (names !== "n,t") throw new Error(`locals ${names}`);
+            const ended = new Promise((resolve) => {
+                const sub = vscode.debug.onDidTerminateDebugSession(() => {
+                    sub.dispose();
+                    resolve();
+                });
+            });
+            await vscode.debug.stopDebugging(session);
+            await Promise.race([ended, sleep(15000)]);
+            return `${stopped.body.reason} at ${path.basename(top.source.path)}:${top.line} in ${top.name}, locals ${names}`;
+        } finally {
+            tracker.dispose();
+            vscode.debug.removeBreakpoints(vscode.debug.breakpoints);
+        }
+    });
+
+    await check("references, code lens and rename", async () => {
+        const refsUri = vscode.Uri.file(path.join(root, "smoke", "scripts", "refs.lua"));
+        const refsDoc = await vscode.workspace.openTextDocument(refsUri);
+        const at = refsDoc.positionAt(refsDoc.getText().indexOf("smoke:good") + 7);
+        const locations = await waitFor("references", async () => {
+            const l = await vscode.commands.executeCommand("vscode.executeReferenceProvider", refsUri, at);
+            return l && l.length >= 2 ? l : undefined;
+        });
+        const files = locations.map((l) => path.basename(l.uri.fsPath)).sort();
+        if (!files.includes("good.json") || !files.includes("refs.lua")) throw new Error(files.join(", "));
+        const goodUri = vscode.Uri.file(path.join(root, "smoke", "blocks", "good.json"));
+        const lenses = await vscode.commands.executeCommand("vscode.executeCodeLensProvider", goodUri);
+        const lens = lenses.find((l) => l.command && /reference/.test(l.command.title));
+        if (!lens || lens.command.title !== "1 reference") throw new Error(`lens: ${lens && lens.command.title}`);
+
+        // F2 on a texture: the edit renames the PNG; VS Code also runs willRenameFiles for it,
+        // which must not rewrite the references a second time
+        const goodDoc = await vscode.workspace.openTextDocument(goodUri);
+        const texAt = goodDoc.positionAt(goodDoc.getText().indexOf("stone_tex") + 2);
+        const edit = await vscode.commands.executeCommand("vscode.executeDocumentRenameProvider", goodUri, texAt, "rock_tex");
+        if (!(await vscode.workspace.applyEdit(edit))) throw new Error("rename edit not applied");
+        const textures = path.join(root, "smoke", "textures", "blocks");
+        if (!fs.existsSync(path.join(textures, "rock_tex.png"))) throw new Error("rock_tex.png not created");
+        const stairs = await vscode.workspace.openTextDocument(vscode.Uri.file(path.join(root, "smoke", "blocks", "stairs_block.json")));
+        const count = (text, word) => text.split(`"${word}"`).length - 1;
+        if (count(goodDoc.getText(), "rock_tex") !== 1 || count(stairs.getText(), "rock_tex") !== 6) {
+            throw new Error(`after F2: ${goodDoc.getText()} | ${stairs.getText()}`);
+        }
+
+        // a file rename (as from the Explorer) updates references through willRenameFiles
+        const move = new vscode.WorkspaceEdit();
+        move.renameFile(vscode.Uri.file(path.join(textures, "rock_tex.png")), vscode.Uri.file(path.join(textures, "pebble.png")));
+        if (!(await vscode.workspace.applyEdit(move))) throw new Error("file rename not applied");
+        await waitFor("pebble in good.json", () => count(goodDoc.getText(), "pebble") === 1, 10000);
+        if (count(stairs.getText(), "pebble") !== 6) throw new Error(`after file rename: ${stairs.getText()}`);
+        await vscode.workspace.saveAll(false);
+        return `${locations.length} references, lens "${lens.command.title}", F2 + Explorer rename ok`;
+    });
+
     fs.writeFileSync(process.env.VC_SMOKE_RESULT, JSON.stringify(results, null, 2));
 };

@@ -41,7 +41,13 @@
     "onCommand:voxelcore.writeLuarc",
     "onCommand:voxelcore.openPreview",
     "onWebviewPanel:voxelcore.modelPreview",
-    "onCustomEditor:voxelcore.vec3Preview"
+    "onCustomEditor:voxelcore.vec3Preview",
+    "onView:voxelcore.content",
+    "onView:voxelcore.dependencies",
+    "onView:voxelcore.engine",
+    "onDebugResolve:voxelcore",
+    "onDebugDynamicConfigurations:voxelcore",
+    "onDebugInitialConfigurations"
   ],
   "contributes": {
     "languages": [
@@ -66,6 +72,17 @@
           ".vca"
         ],
         "configuration": "./languages/vcm.language-configuration.json"
+      },
+      {
+        "id": "vclang",
+        "aliases": [
+          "VoxelCore Locale",
+          "vclang"
+        ],
+        "filenamePatterns": [
+          "**/texts/*.txt"
+        ],
+        "configuration": "./languages/vclang.language-configuration.json"
       }
     ],
     "grammars": [
@@ -78,6 +95,11 @@
         "language": "vca",
         "scopeName": "source.vca",
         "path": "./syntaxes/vca.tmLanguage.json"
+      },
+      {
+        "language": "vclang",
+        "scopeName": "source.vclang",
+        "path": "./syntaxes/vclang.tmLanguage.json"
       }
     ],
     "snippets": [
@@ -161,6 +183,78 @@
         "category": "VoxelCore"
       },
       {
+        "command": "voxelcore.openFile",
+        "title": "Open Asset",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.previewFile",
+        "title": "Preview Asset",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.debugQuickWorld",
+        "title": "Debug Quick World",
+        "category": "VoxelCore",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "voxelcore.attachDebugger",
+        "title": "Attach Debugger to Running Engine",
+        "category": "VoxelCore",
+        "icon": "$(debug)"
+      },
+      {
+        "command": "voxelcore.debugHeadlessScript",
+        "title": "Debug Lua Script Headless",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.reloadContent",
+        "title": "Reload Content in the Running Engine",
+        "category": "VoxelCore",
+        "icon": "$(flame)"
+      },
+      {
+        "command": "voxelcore.explorer.refresh",
+        "title": "Refresh",
+        "category": "VoxelCore",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "voxelcore.explorer.copyId",
+        "title": "Copy Content ID",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.explorer.openPreview",
+        "title": "Open Preview",
+        "category": "VoxelCore",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "voxelcore.explorer.reveal",
+        "title": "Reveal in Explorer View",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.explorer.revealInOS",
+        "title": "Reveal in File Explorer",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.showEngineOutput",
+        "title": "Show Engine Output",
+        "category": "VoxelCore",
+        "icon": "$(output)"
+      },
+      {
+        "command": "voxelcore.clearRuntimeProblems",
+        "title": "Clear Engine Problems",
+        "category": "VoxelCore",
+        "icon": "$(clear-all)"
+      },
+      {
         "command": "voxelcore.configureLua",
         "title": "Configure Lua for content packs",
         "category": "VoxelCore"
@@ -168,6 +262,22 @@
       {
         "command": "voxelcore.writeLuarc",
         "title": "Write .luarc.json",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.findReferences",
+        "title": "Find VoxelCore References",
+        "category": "VoxelCore",
+        "icon": "$(references)"
+      },
+      {
+        "command": "voxelcore.renameSymbol",
+        "title": "Rename Content (Files and References)...",
+        "category": "VoxelCore"
+      },
+      {
+        "command": "voxelcore.showReferences",
+        "title": "Show References",
         "category": "VoxelCore"
       },
       {
@@ -189,6 +299,16 @@
           "submenu": "voxelcore.new",
           "group": "navigation@9",
           "when": "explorerResourceIsFolder"
+        },
+        {
+          "command": "voxelcore.findReferences",
+          "when": "voxelcore.hasPacks && !explorerResourceIsFolder && resourceExtname =~ /^\\.(png|ogg|wav|vcm|obj|vec3|json|lua|xml)$/",
+          "group": "4_search@9"
+        },
+        {
+          "command": "voxelcore.renameSymbol",
+          "when": "voxelcore.hasPacks && !explorerResourceIsFolder && resourceExtname =~ /^\\.(png|ogg|wav|vcm|obj|vec3|json|lua|xml)$/",
+          "group": "7_modification@9"
         },
         {
           "command": "voxelcore.openPreview",
@@ -244,6 +364,42 @@
           "when": "editorLangId == lua"
         },
         {
+          "command": "voxelcore.openFile",
+          "when": "false"
+        },
+        {
+          "command": "voxelcore.previewFile",
+          "when": "false"
+        },
+        {
+          "command": "voxelcore.explorer.copyId",
+          "when": "false"
+        },
+        {
+          "command": "voxelcore.explorer.openPreview",
+          "when": "false"
+        },
+        {
+          "command": "voxelcore.explorer.reveal",
+          "when": "false"
+        },
+        {
+          "command": "voxelcore.explorer.revealInOS",
+          "when": "false"
+        },
+        {
+          "command": "voxelcore.findReferences",
+          "when": "voxelcore.hasPacks && editorIsOpen"
+        },
+        {
+          "command": "voxelcore.renameSymbol",
+          "when": "voxelcore.hasPacks && editorIsOpen"
+        },
+        {
+          "command": "voxelcore.showReferences",
+          "when": "false"
+        },
+        {
           "command": "voxelcore.openPreview",
           "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceExtname == .vec3 || activeCustomEditorId == voxelcore.vec3Preview || voxelcore.previewable"
         }
@@ -253,6 +409,117 @@
           "command": "voxelcore.runHeadlessScript",
           "group": "voxelcore",
           "when": "editorLangId == lua && voxelcore.hasPacks"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "voxelcore.debugQuickWorld",
+          "when": "view == voxelcore.engine",
+          "group": "navigation@2"
+        },
+        {
+          "command": "voxelcore.reloadContent",
+          "when": "view == voxelcore.engine",
+          "group": "navigation@5"
+        },
+        {
+          "command": "voxelcore.explorer.refresh",
+          "when": "view == voxelcore.content || view == voxelcore.dependencies",
+          "group": "navigation@9"
+        },
+        {
+          "command": "voxelcore.runQuickWorld",
+          "when": "view == voxelcore.engine",
+          "group": "navigation@1"
+        },
+        {
+          "command": "voxelcore.run",
+          "when": "view == voxelcore.engine",
+          "group": "navigation@2"
+        },
+        {
+          "command": "voxelcore.showEngineOutput",
+          "when": "view == voxelcore.engine",
+          "group": "navigation@3"
+        },
+        {
+          "command": "voxelcore.clearRuntimeProblems",
+          "when": "view == voxelcore.engine",
+          "group": "navigation@4"
+        },
+        {
+          "command": "voxelcore.newPack",
+          "when": "view == voxelcore.content",
+          "group": "1_new"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "voxelcore.attachDebugger",
+          "when": "view == voxelcore.engine && viewItem == voxelcore.engine.hotreload",
+          "group": "inline"
+        },
+        {
+          "command": "voxelcore.explorer.openPreview",
+          "when": "view == voxelcore.content && viewItem =~ /\\bpreviewable\\b/",
+          "group": "inline"
+        },
+        {
+          "command": "voxelcore.explorer.openPreview",
+          "when": "view == voxelcore.content && viewItem =~ /\\bpreviewable\\b/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "voxelcore.explorer.copyId",
+          "when": "view == voxelcore.content && (viewItem =~ /\\bid\\b/ || viewItem == voxelcore.pack)",
+          "group": "2_copy@1"
+        },
+        {
+          "command": "voxelcore.explorer.reveal",
+          "when": "view == voxelcore.content && (viewItem =~ /\\bfile\\b/ || viewItem == voxelcore.pack)",
+          "group": "3_reveal@1"
+        },
+        {
+          "command": "voxelcore.newBlock",
+          "when": "view == voxelcore.content && viewItem == voxelcore.pack",
+          "group": "1_new@1"
+        },
+        {
+          "command": "voxelcore.newItem",
+          "when": "view == voxelcore.content && viewItem == voxelcore.pack",
+          "group": "1_new@2"
+        },
+        {
+          "command": "voxelcore.newEntity",
+          "when": "view == voxelcore.content && viewItem == voxelcore.pack",
+          "group": "1_new@3"
+        },
+        {
+          "command": "voxelcore.explorer.revealInOS",
+          "when": "view == voxelcore.engine && viewItem =~ /^voxelcore\\.engine\\.(exe|res|user|log)$/",
+          "group": "1_reveal@1"
+        },
+        {
+          "command": "voxelcore.openLog",
+          "when": "view == voxelcore.engine && viewItem == voxelcore.engine.log",
+          "group": "inline"
+        },
+        {
+          "command": "voxelcore.findReferences",
+          "when": "view == voxelcore.content && viewItem =~ /\\bfile\\b/",
+          "group": "4_refs@1"
+        },
+        {
+          "command": "voxelcore.renameSymbol",
+          "when": "view == voxelcore.content && viewItem =~ /\\bfile\\b/",
+          "group": "4_refs@2"
+        }
+      ],
+      "editor/title/run": [
+        {
+          "command": "voxelcore.debugHeadlessScript",
+          "when": "resourceLangId == lua && voxelcore.hasPacks",
+          "group": "navigation@2"
         }
       ],
       "editor/title": [
@@ -337,6 +604,36 @@
           "markdownDescription": "User dir (`--dir`) for runs started from VS Code. Workspace packs are linked into `<userDir>/content`. Empty: the extension's workspace storage.",
           "scope": "machine-overridable"
         },
+        "voxelcore.gutterThumbnails": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a texture thumbnail in the gutter next to texture references in definitions and VCM models."
+        },
+        "voxelcore.hotReload.enable": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Reload saved assets, modules and content in an engine started from VS Code. Runs start with `--dbg-server` (the window title shows *[debugging]*) and the quick-world script stays running to serve reload requests."
+        },
+        "voxelcore.hotReload.content": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "auto",
+            "off"
+          ],
+          "default": "ask",
+          "enumDescriptions": [
+            "Ask before reloading content (it reopens the world)",
+            "Reload content on every save of a definition or script",
+            "Never reload content automatically"
+          ],
+          "description": "What to do when a block/item/entity definition, script or layout is saved while the engine runs."
+        },
+        "voxelcore.log.tail": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Follow `<userDir>/latest.log` to show engine output and map engine errors to the Problems panel for engines started outside VS Code with the same user dir (`voxelcore.userDir`)."
+        },
         "voxelcore.configureLua": {
           "type": "string",
           "enum": [
@@ -378,6 +675,169 @@
         }
       }
     },
+    "breakpoints": [
+      {
+        "language": "lua"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "voxelcore",
+        "label": "VoxelCore",
+        "languages": [
+          "lua"
+        ],
+        "configurationAttributes": {
+          "launch": {
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "quickWorld",
+                  "run",
+                  "headless"
+                ],
+                "enumDescriptions": [
+                  "Open the dev world with every workspace pack (like VoxelCore: Run Quick World)",
+                  "Start the engine at the main menu",
+                  "Run an app script without a window (set 'script')"
+                ],
+                "default": "quickWorld"
+              },
+              "world": {
+                "type": "string",
+                "description": "quickWorld: world name",
+                "default": "vscode-dev"
+              },
+              "generator": {
+                "type": "string",
+                "description": "quickWorld: generator id, e.g. base:demo"
+              },
+              "seed": {
+                "type": "string",
+                "description": "quickWorld: seed of a new world"
+              },
+              "recreate": {
+                "type": "boolean",
+                "description": "quickWorld: delete the world first",
+                "default": false
+              },
+              "script": {
+                "type": "string",
+                "description": "headless: the app script (.lua)"
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Extra engine arguments"
+              },
+              "port": {
+                "type": "number",
+                "description": "Debugger port (default: a free one)"
+              },
+              "waitForDebugger": {
+                "type": "boolean",
+                "default": true,
+                "description": "quickWorld: load content only after the breakpoints are set, so breakpoints in load-time code and on_world_open are hit"
+              }
+            }
+          },
+          "attach": {
+            "properties": {
+              "port": {
+                "type": "number",
+                "description": "Port of an engine started with --dbg-server tcp:<port>. Empty: the engine run by this window"
+              },
+              "host": {
+                "type": "string",
+                "default": "127.0.0.1"
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "voxelcore",
+            "request": "launch",
+            "name": "VoxelCore: Debug Quick World",
+            "mode": "quickWorld"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "VoxelCore: Debug Quick World",
+            "description": "Open the dev world with the workspace packs and debug their Lua scripts",
+            "body": {
+              "type": "voxelcore",
+              "request": "launch",
+              "name": "VoxelCore: Debug Quick World",
+              "mode": "quickWorld"
+            }
+          },
+          {
+            "label": "VoxelCore: Debug Headless Script",
+            "description": "Run an app script without a window and debug it",
+            "body": {
+              "type": "voxelcore",
+              "request": "launch",
+              "name": "VoxelCore: Debug Headless Script",
+              "mode": "headless",
+              "script": "^\"\\${file}\""
+            }
+          },
+          {
+            "label": "VoxelCore: Attach",
+            "description": "Attach to an engine started with --dbg-server",
+            "body": {
+              "type": "voxelcore",
+              "request": "attach",
+              "name": "VoxelCore: Attach",
+              "port": 9000
+            }
+          }
+        ]
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "voxelcore",
+          "title": "VoxelCore",
+          "icon": "media/voxelcore.svg"
+        }
+      ]
+    },
+    "views": {
+      "voxelcore": [
+        {
+          "id": "voxelcore.content",
+          "name": "Content",
+          "icon": "media/voxelcore.svg",
+          "contextualTitle": "VoxelCore"
+        },
+        {
+          "id": "voxelcore.dependencies",
+          "name": "Dependencies",
+          "visibility": "collapsed"
+        },
+        {
+          "id": "voxelcore.engine",
+          "name": "Engine"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "voxelcore.content",
+        "contents": "No VoxelCore content packs in this workspace. A pack is a folder with a package.json that has an \"id\".\n[New Content Pack](command:voxelcore.newPack)"
+      },
+      {
+        "view": "voxelcore.dependencies",
+        "contents": "No workspace content packs."
+      }
+    ],
     "customEditors": [
       {
         "viewType": "voxelcore.vec3Preview",

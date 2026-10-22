@@ -1,0 +1,40 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "VoxelCore Locale",
+    "scopeName": "source.vclang",
+    "patterns": [
+        { "include": "#comment" },
+        { "include": "#entry" }
+    ],
+    "repository": {
+        "comment": {
+            "match": "^\\s*(#).*$",
+            "name": "comment.line.number-sign.vclang",
+            "captures": { "1": { "name": "punctuation.definition.comment.vclang" } }
+        },
+        "entry": {
+            "begin": "^\\s*(?=[^#\\s])",
+            "end": "$",
+            "patterns": [
+                {
+                    "begin": "\\G",
+                    "end": "(=)",
+                    "endCaptures": { "1": { "name": "keyword.operator.assignment.vclang" } },
+                    "contentName": "variable.other.key.vclang",
+                    "patterns": [{ "include": "#escape" }]
+                },
+                {
+                    "match": "(?<==).*$",
+                    "name": "string.unquoted.value.vclang",
+                    "captures": { "0": { "patterns": [{ "include": "#escape" }] } }
+                }
+            ]
+        },
+        "escape": {
+            "patterns": [
+                { "match": "\\\\(?:[nrbtfv'\"\\\\/]|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[0-7]+|$)", "name": "constant.character.escape.vclang" },
+                { "match": "\\\\.", "name": "invalid.illegal.escape.vclang" }
+            ]
+        }
+    }
+}

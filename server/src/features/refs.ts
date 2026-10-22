@@ -103,7 +103,7 @@ export function jsonStringAt(role: FileRole, text: string, offset: number): Json
     return { kind, node: stringNode, value: stringNode ? String(stringNode.value) : "", location };
 }
 
-function nodeToValue(node: Node): unknown {
+export function nodeToValue(node: Node): unknown {
     if (node.type === "object") {
         const o: Record<string, unknown> = {};
         for (const p of node.children ?? []) {
@@ -261,15 +261,16 @@ export function luaStringAt(text: string, offset: number): LuaStringAt | undefin
         const contentStart = m.index + 1;
         const contentEnd = contentStart + m[2].length;
         if (col < contentStart || col > contentEnd) continue;
-        const before = line.slice(0, m.index).replace(/\(\s*$/, "");
-        for (const [pattern, kind] of LUA_ID_CALLS) {
-            if (pattern.test(before)) {
-                return { kind, value: m[2], start: lineStart + contentStart, end: lineStart + contentEnd };
-            }
-        }
-        return undefined;
+        const kind = luaCallKind(line.slice(0, m.index));
+        return kind ? { kind, value: m[2], start: lineStart + contentStart, end: lineStart + contentEnd } : undefined;
     }
     return undefined;
+}
+
+/** Reference kind of a Lua string literal from the line text before its opening quote. */
+export function luaCallKind(before: string): RefKind | undefined {
+    const callee = before.replace(/\(\s*$/, "");
+    return LUA_ID_CALLS.find(([pattern]) => pattern.test(callee))?.[1];
 }
 
 export function displayPath(index: ContentIndex, file: string): string {

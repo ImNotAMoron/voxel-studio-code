@@ -12,16 +12,37 @@ import { registerPreview } from "./preview";
 import { registerScaffold } from "./scaffold";
 import { registerRun, setStorageRoot } from "./run";
 import { findResPath, findWorkspacePacks } from "./packs";
+import { registerLog } from "./log";
+import { registerExplorer } from "./explorer";
+import { registerWorkspaceIndex } from "./workspaceIndex";
+import { registerNavigation } from "./navigation";
+import { registerDebug } from "./debug";
+import { registerHotReload } from "./hotreload";
+import { registerThumbnails } from "./thumbnails";
 
 let client: LanguageClient | undefined;
 
+const HOVER_COMMANDS = ["voxelcore.openFile", "voxelcore.previewFile"];
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     if (context.storageUri) setStorageRoot(context.storageUri.fsPath);
+    registerWorkspaceIndex(context);
+    const log = registerLog(context);
     registerScaffold(context);
-    registerRun(context);
+    registerRun(context, log);
+    registerExplorer(context, log);
+    registerDebug(context);
+    registerHotReload(context);
     registerPreview(context);
     registerSchemas(context);
     registerLua(context);
+    registerNavigation(context, () => client);
+    registerThumbnails(context);
+    context.subscriptions.push(
+        // command links in hovers (server/src/features/assets.ts)
+        vscode.commands.registerCommand("voxelcore.openFile", (file: string) => vscode.commands.executeCommand("vscode.open", vscode.Uri.file(file))),
+        vscode.commands.registerCommand("voxelcore.previewFile", (file: string) => vscode.commands.executeCommand("voxelcore.openPreview", vscode.Uri.file(file)))
+    );
     await updatePackContext();
     context.subscriptions.push(
         vscode.workspace.onDidCreateFiles(() => updatePackContext()),
@@ -65,6 +86,7 @@ async function startLanguageServer(context: vscode.ExtensionContext) {
             { scheme: "file", language: "lua" },
             { scheme: "file", language: "vcm" },
             { scheme: "file", language: "vca" },
+            { scheme: "file", language: "vclang" },
         ],
         synchronize: {
             configurationSection: "voxelcore",
@@ -75,6 +97,14 @@ async function startLanguageServer(context: vscode.ExtensionContext) {
         initializationOptions: serverSettings(),
         outputChannelName: "VoxelCore Language Server",
         middleware: {
+            provideHover: async (document, position, token, next) => {
+                const hover = await next(document, position, token);
+                // only the hover's own command links may run
+                for (const content of hover?.contents ?? []) {
+                    if (content instanceof vscode.MarkdownString) content.isTrusted = { enabledCommands: HOVER_COMMANDS };
+                }
+                return hover;
+            },
             workspace: {
                 configuration: async (params, token, next) => {
                     const result = await next(params, token);

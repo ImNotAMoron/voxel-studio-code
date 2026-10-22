@@ -81,9 +81,77 @@ export interface QuickWorldOptions {
     generator: string;
     packs: string[];
     recreate: boolean;
+    /** Wait (up to 15 s) for `<userDir>/export/vscode/debugger-ready` before loading content. */
+    waitForDebugger?: boolean;
+    /** Keep running and serve hot-reload requests from `<userDir>/export/vscode/bridge.json`. */
+    bridge?: boolean;
 }
 
+/**
+ * Files of the dev bridge, in `<userDir>/export/vscode/`: app scripts may only
+ * write to `world:`, `export:` and `config:` (EnginePaths::isWriteable).
+ */
+export const BRIDGE_DIR = "export/vscode";
+const BRIDGE_VPATH = "export:vscode";
+export const BRIDGE_REQUESTS = "bridge.json";
+export const BRIDGE_ACK = "bridge-ack.json";
+export const DEBUGGER_READY = "debugger-ready";
+
 const luaString = (s: string) => JSON.stringify(s);
+
+function waitForDebuggerLua(): string[] {
+    const ready = luaString(`${BRIDGE_VPATH}/${DEBUGGER_READY}`);
+    return [
+        "-- wait for VS Code to send the breakpoints (the file holds the number of",
+        "-- queued debugger messages; the engine reads one per frame)",
+        "do",
+        "    local start = time.uptime()",
+        `    while not file.exists(${ready}) and time.uptime() - start < 15 do app.tick() end`,
+        `    local queued = file.exists(${ready}) and tonumber(file.read(${ready})) or 0`,
+        "    for _ = 1, queued * 2 + 5 do app.tick() end",
+        "end",
+        "",
+    ];
+}
+
+function bridgeLua(): string[] {
+    const requests = luaString(`${BRIDGE_VPATH}/${BRIDGE_REQUESTS}`);
+    const ack = luaString(`${BRIDGE_VPATH}/${BRIDGE_ACK}`);
+    return [
+        "",
+        "-- dev bridge: VS Code writes hot-reload requests, this script runs them",
+        "-- inside the app script coroutine (where content can be reloaded)",
+        "local last = 0",
+        `if file.exists(${requests}) then`,
+        `    local ok, data = pcall(json.parse, file.read(${requests}))`,
+        "    if ok and type(data) == \"table\" then last = data.seq or 0 end",
+        "end",
+        "local function run_request(request)",
+        "    if request.op == \"reload_module\" then",
+        "        reload_module(request.name)",
+        "    elseif request.op == \"reload_content\" then",
+        "        app.reconfig_packs({}, {})",
+        "    else",
+        "        error(\"unknown request \" .. tostring(request.op))",
+        "    end",
+        "end",
+        "while true do",
+        "    for _ = 1, 10 do app.tick() end",
+        `    if file.exists(${requests}) then`,
+        `        local ok, data = pcall(json.parse, file.read(${requests}))`,
+        "        if ok and type(data) == \"table\" and (data.seq or 0) > last then",
+        "            for _, request in ipairs(data.requests or {}) do",
+        "                if request.seq > last then",
+        "                    last = request.seq",
+        "                    local done, err = pcall(run_request, request)",
+        `                    file.write(${ack}, json.tostring({seq = request.seq, ok = done, error = (not done) and tostring(err) or nil}))`,
+        "                end",
+        "            end",
+        "        end",
+        "    end",
+        "end",
+    ];
+}
 
 /** App script (`--script`) that enables the packs and opens a dev world. */
 export function quickWorldScript(options: QuickWorldOptions): string {
@@ -93,6 +161,7 @@ export function quickWorldScript(options: QuickWorldOptions): string {
         `local packs = {${packs}}`,
         `local name = ${luaString(options.world)}`,
         "",
+        ...(options.waitForDebugger ? waitForDebuggerLua() : []),
         `if ${options.recreate} and file.exists("user:worlds/" .. name) then`,
         "    app.delete_world(name)",
         "end",
@@ -109,6 +178,7 @@ export function quickWorldScript(options: QuickWorldOptions): string {
         "    app.reconfig_packs(packs, {})",
         `    app.new_world(name, ${luaString(options.seed)}, ${luaString(options.generator)})`,
         "end",
+        ...(options.bridge ? bridgeLua() : []),
         "",
     ].join("\n");
 }

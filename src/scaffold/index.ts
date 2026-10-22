@@ -8,11 +8,18 @@ import * as t from "./templates";
 export function registerScaffold(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.commands.registerCommand("voxelcore.newPack", newPack),
-        vscode.commands.registerCommand("voxelcore.newBlock", (uri?: vscode.Uri) => newBlock(uri)),
-        vscode.commands.registerCommand("voxelcore.newItem", (uri?: vscode.Uri) => newItem(uri)),
-        vscode.commands.registerCommand("voxelcore.newEntity", (uri?: vscode.Uri) => newEntity(uri)),
-        vscode.commands.registerCommand("voxelcore.newComponent", (uri?: vscode.Uri) => newComponent(uri))
+        vscode.commands.registerCommand("voxelcore.newBlock", (arg?: unknown) => newBlock(hintUri(arg))),
+        vscode.commands.registerCommand("voxelcore.newItem", (arg?: unknown) => newItem(hintUri(arg))),
+        vscode.commands.registerCommand("voxelcore.newEntity", (arg?: unknown) => newEntity(hintUri(arg))),
+        vscode.commands.registerCommand("voxelcore.newComponent", (arg?: unknown) => newComponent(hintUri(arg)))
     );
+}
+
+/** A file explorer Uri, or a content explorer pack node (`{ pack: { root } }`). */
+function hintUri(arg: unknown): vscode.Uri | undefined {
+    if (arg instanceof vscode.Uri) return arg;
+    const root = (arg as { pack?: { root?: unknown } } | undefined)?.pack?.root;
+    return typeof root === "string" ? vscode.Uri.file(root) : undefined;
 }
 
 /** Files to create; existing files are never overwritten. */
