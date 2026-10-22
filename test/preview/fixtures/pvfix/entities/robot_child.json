@@ -1,0 +1,12 @@
+{
+    "parent": "pvfix:robot",
+    "components": [
+        "base:drop"
+    ],
+    "sensors": [
+        [
+            "radius",
+            2
+        ]
+    ]
+}

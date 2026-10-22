@@ -1,0 +1,30 @@
+{
+    "components": [
+        "pvfix:brain",
+        {
+            "name": "pvfix:missing",
+            "args": {}
+        }
+    ],
+    "hitbox": [
+        0.5,
+        1,
+        0.5
+    ],
+    "sensors": [
+        [
+            "radius",
+            0.75
+        ],
+        [
+            "aabb",
+            -1,
+            0,
+            -1,
+            1,
+            2,
+            1
+        ]
+    ],
+    "body-type": "kinematic"
+}

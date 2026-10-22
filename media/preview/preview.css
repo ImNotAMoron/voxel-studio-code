@@ -130,3 +130,43 @@ body {
         border-top: 1px solid var(--vscode-panel-border, transparent);
     }
 }
+
+#sidebar .link {
+    cursor: pointer;
+}
+
+#sidebar .link:hover {
+    text-decoration: underline;
+}
+
+#sidebar .selected {
+    color: var(--vscode-textLink-activeForeground, #fa0);
+    font-weight: 600;
+}
+
+#sidebar .on {
+    color: var(--vscode-testing-iconPassed, #3c3);
+}
+
+#sidebar .row .error,
+#sidebar .error.link {
+    color: var(--vscode-errorForeground);
+}
+
+#sidebar button.small {
+    margin-top: 0;
+    padding: 1px 6px;
+}
+
+#sidebar input[type="range"] {
+    flex: 1;
+    min-width: 60px;
+}
+
+.swatch.emission {
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    background: var(--swatch, gray);
+    box-shadow: 0 0 6px var(--swatch, gray);
+}

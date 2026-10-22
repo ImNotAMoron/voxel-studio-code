@@ -29,9 +29,9 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
 | `src/run/` | integration | `voxelcore` TaskProvider (CustomExecution pseudoterminal), run commands, status bar; `userdir.ts`: pack junctions/symlinks + quick-world app script |
 | `src/schemas/` | integration | TOML schema associations + pack-root `json.schemas` (workspace settings, with consent) |
 | `src/lua/` | lua | configures `sumneko.lua` (`Lua.workspace.library` → `meta/`, globals, runtime); `settings.ts` is pure |
-| `src/preview/` | preview | model preview panel, `.vec3` custom editor, texture resolver |
+| `src/preview/` | preview | preview panel + `.vec3` custom editor (`index.ts`), texture resolver, `defs.ts` (pure: preview kind of a file, block/entity/skeleton inputs via `ContentIndex`) |
 | `shared/vcm/parser.ts` | integration | VCM/VCA text → AST with offsets (mirrors `xml::VcmParser`) |
-| `shared/models/` | preview | mesh builders `vcm.ts`, `obj.ts`, `vec3.ts` (ports of engine loaders), `protocol.ts` (host↔webview messages), `selection.ts` |
+| `shared/models/` | preview | mesh builders `vcm.ts`, `obj.ts`, `vec3.ts` (ports of engine loaders), `block.ts` (BlockLoader/ContentBuilder/BlocksRenderer port), `entity.ts` (EntityLoader + rigging), `assets.ts` (stored model names), `jsondef.ts` (JSON with spans), `protocol.ts` (host↔webview messages), `selection.ts` |
 | `shared/content/` | server | `ContentIndex`: the workspace model of packs and units; `pack.ts` (id/dependency/version helpers, Levenshtein), `json.ts` (tolerant engine-JSON reader) |
 | `server/src/` | server | `server.ts` (LSP), `cli.ts`, `linter.ts` (runs rules), `schemas.ts` (loads `schemas/` for keys/quick fixes), `rules/*` (lint rules + registry), `lua/` (script-kind spec, luaparse analysis), `vcm/spec.ts` (VCM/VCA element/attribute spec), `features/*` (completion, hover, definition, symbols, code actions) |
 | `webview/src/` | preview | `viewer.ts` (three.js scene), `panel.ts` (side panel), `placeholders.ts` |
@@ -74,6 +74,18 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
   click in the webview posts `{type:"select", span}` and the host reveals
   that range. Golden fixtures (`test/preview/fixtures/golden.json`) come
   from the engine's real loaders through the C++ dumper.
+  Definitions (`blocks/`, `entities/`, `skeletons/` JSON, detected by
+  `defs.ts previewKind`): the host keeps one `ContentIndex` (rescanned on
+  file create/delete), and `DefResolver` reads the unit's files + `parent`
+  chain + skeleton + model files (live editor text first) and calls
+  `shared/models/block.ts` / `entity.ts`. Every file read is recorded as a
+  dependency, so edits to a parent, skeleton or model refresh the view.
+  `ModelData` carries optional `overlays` (boxes, spheres, labels),
+  `block` / `entity` info and `shadingModel: "block"`; primitives may
+  point into another `file`. Webview → host: `options` (variant,
+  rotation → rebuild), `select` with `file`, `rendered` (scene stats, used
+  by the smoke test through the internal `voxelcore.preview.inspect`).
+  `test/preview/fixtures/blocks-golden.json` comes from `dump_blocks`.
 - **Run.** The `voxelcore` task (actions `run` / `quickWorld` / `headless`)
   links non-built-in workspace packs into `<userDir>/content/<id>`, writes a
   `--script` app script for quick worlds (`app.reconfig_packs`,
@@ -115,7 +127,10 @@ Engine ── VoxelCore(.exe) launched by the `voxelcore` task provider (src/run
   definitions/diagnostics); event callbacks aren't in `meta/`; some return
   types are inferred.
 - Preview: no VCM-XML models; clicking a box selects the `@box`, not the
-  `@part`; texture lookup ignores pack dependencies.
+  `@part`; model texture lookup ignores pack dependencies (definition
+  previews use the content index order). Block preview: no AO, neighbour
+  culling or X-sprite jitter. Entity preview: rest pose only, no skeleton
+  texture overrides.
 - Not yet verified by hand in VS Code: visible texture rendering in the
   preview, and the sumneko.lua integration (the smoke test runs with an
   isolated extensions dir).

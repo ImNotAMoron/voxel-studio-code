@@ -1,4 +1,4 @@
-# Builds dump_models against an already-built engine (VoxelCoreSrc static lib).
+# Builds dump_models and dump_blocks against an already-built engine (VoxelCoreSrc static lib).
 #
 #   cmake -S test/preview/dumper -B <tmp>/dumper -DVOXELCORE_ROOT=<repo> \
 #         -DCMAKE_TOOLCHAIN_FILE=<vcpkg>/scripts/buildsystems/vcpkg.cmake \
@@ -43,13 +43,14 @@ else()
     set(SRC_LIB "${VOXELCORE_BUILD}/src/libVoxelCoreSrc.a")
 endif()
 
-add_executable(dump_models dump_models.cpp)
-target_include_directories(dump_models PRIVATE "${VOXELCORE_ROOT}/src")
+foreach(tool dump_models dump_blocks)
+add_executable(${tool} ${tool}.cpp)
+target_include_directories(${tool} PRIVATE "${VOXELCORE_ROOT}/src")
 if(MSVC)
-    target_compile_options(dump_models PRIVATE /utf-8 /D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+    target_compile_options(${tool} PRIVATE /utf-8 /D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 endif()
 target_link_libraries(
-    dump_models
+    ${tool}
     PRIVATE "${SRC_LIB}"
             glfw
             OpenGL::GL
@@ -65,3 +66,4 @@ target_link_libraries(
             glm::glm
             ${LUAJIT_LIB}
 )
+endforeach()

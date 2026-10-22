@@ -1,0 +1,8 @@
+{
+    "id": "pvfix",
+    "title": "Preview fixtures",
+    "version": "1.0",
+    "dependencies": [
+        "base"
+    ]
+}

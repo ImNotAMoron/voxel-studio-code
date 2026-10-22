@@ -1,0 +1,13 @@
+{
+    "model": "custom",
+    "model-name": "pvslab",
+    "texture-faces": [
+        "side",
+        "side",
+        "bottom",
+        "top",
+        "side",
+        "side"
+    ],
+    "rotation": "pipe"
+}

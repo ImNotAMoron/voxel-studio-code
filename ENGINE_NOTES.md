@@ -66,3 +66,44 @@ useful. File/line references are to the VoxelCore repo.
 - `Player::attemptToChooseSpawnpoint` truncates float coordinates toward
   zero, so it checks one column but spawns the player in the neighbouring
   one on negative coordinates (found while building `packs/backrooms`).
+
+### Found while building the block / entity preview (§5.4, §5.8)
+
+- **Inherited state-based variants override the child's root.**
+  `Block::cloneTo` copies the parent's `variants`, the child's
+  `load_variant(def.defaults, ...)` then changes only `defaults`, and
+  `ContentBuilder::build` sets `def.defaults = variants[0]` (the parent's
+  root). A child of a block with `state-based` silently loses its own
+  `texture` / `texture-faces` / `model` / `model-name` unless it redefines
+  `state-based`. The preview reproduces this and warns.
+- **`size` + `state-based`**: `BlockLoader` turns a `block` model into
+  `aabb` for extended blocks *after* the variants were copied from
+  `defaults`, and `ContentBuilder` then restores `defaults` from
+  `variants[0]`, so the conversion is lost (model `block`, hitbox = size).
+- **`AABB::transform`** (`src/maths/aabb.hpp`) adds corner `(b.x, b.y, b.z)`
+  twice and never `(a.x, b.y, b.z)`. Rotated `aabb` entity sensors can get a
+  too-small bounding box when the rotation isn't only around Y.
+- **Entity sensor indices**: `EntityLoader` numbers a child's sensors from 0
+  and appends them to the parent's, so `on_sensor_enter` receives the same
+  index for a parent's and a child's sensor.
+- **Custom block models**:
+  - `ModelsGenerator::prepareModel` indexes `textureFaces[index]` (a
+    `std::array`) with the number after `$` unchecked (`$6` is UB), and
+    `std::stoll` on `$x` throws an uncaught `invalid_argument`.
+  - Any atlas prefix is accepted: `ContentGfxCache` strips it and looks the
+    name up in the `blocks` atlas (`entities:foo` uses `blocks/foo`). A
+    texture without `:` keeps raw UVs over the whole atlas.
+  - A `model-name` pointing to a VCM with `@bone`s fails: the loader stores
+    only `<name>.<part>` models and a skeleton, so
+    `assets.require<model::Model>(name)` throws (unless `preload.json`
+    sets `squash`). vec3 sub-models aren't squashed either, so their
+    `origin` is ignored for blocks and skeleton bones.
+- **`texture-faces` docs** (`block-properties.md`) don't give the face
+  order. It's `-X, +X, -Y, +Y, -Z, +Z` (`FACE_MX..FACE_PZ`,
+  `BlocksRenderer::blockCube`); `ModelsGenerator.cpp` names them west, east,
+  bottom, top, south, north while VCM `SIDE_INDICES` call -Z north. The doc
+  also says `texture-faces` "can't be used" with `texture`; the code just
+  ignores it.
+- **`aabb` model UVs** aren't cut to the box: every face shows the whole
+  texture squashed (`BlocksRenderer::blockAABB`), and its bottom face uses a
+  different basis than the cube's (rotated 180°).

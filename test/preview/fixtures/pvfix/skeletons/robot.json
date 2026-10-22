@@ -1,0 +1,40 @@
+{
+    "root": {
+        "name": "base",
+        "model": "pvslab",
+        "nodes": [
+            {
+                "name": "torso",
+                "offset": [
+                    0,
+                    0.5,
+                    0
+                ],
+                "model": "human.head",
+                "nodes": [
+                    {
+                        "name": "head",
+                        "offset": [
+                            0.1,
+                            0.25,
+                            -0.2
+                        ],
+                        "model": "pvslab"
+                    }
+                ]
+            },
+            {
+                "name": "empty",
+                "offset": [
+                    1,
+                    0,
+                    0
+                ]
+            },
+            {
+                "name": "broken",
+                "model": "nope"
+            }
+        ]
+    }
+}

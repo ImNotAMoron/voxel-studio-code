@@ -29,6 +29,22 @@ const write = (rel, text) => {
 write("package.json", JSON.stringify({ id: "smoke", title: "Smoke", version: "1.0", dependencies: ["base"] }, null, 4));
 write("blocks/bad.json", JSON.stringify({ texture: "missing_texture", emision: [15, 0, 0] }, null, 4));
 write("blocks/good.json", JSON.stringify({ texture: "stone_tex" }, null, 4));
+// block + entity previews (FEATURES.md §5.4, §5.8)
+write(
+    "blocks/stairs_block.json",
+    JSON.stringify(
+        {
+            model: "custom",
+            "model-name": "stairs",
+            "texture-faces": ["stone_tex", "stone_tex", "stone_tex", "stone_tex", "stone_tex", "stone_tex"],
+            rotation: "pipe",
+            "state-based": { variants: [{ model: "block" }] },
+        },
+        null,
+        4
+    )
+);
+write("entities/bot.json", JSON.stringify({ "skeleton-name": "base:player", components: ["base:drop"], hitbox: [0.6, 1.8, 0.6], sensors: [["radius", 1]] }, null, 4));
 fs.mkdirSync(path.join(smoke, "textures", "blocks"), { recursive: true });
 fs.copyFileSync(
     path.join(engine, "res", "content", "base", "textures", "blocks", "stone.png"),

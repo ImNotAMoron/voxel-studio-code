@@ -4,12 +4,51 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { VertexNormalsHelper } from "three/examples/jsm/helpers/VertexNormalsHelper.js";
 
-import type { ModelData, ModelMesh, ModelPrimitive, Span } from "../../shared/models/types";
+import type { ModelData, ModelMesh, ModelOverlays, ModelPrimitive, OverlayKind, Span } from "../../shared/models/types";
 import type { PreviewToggles, TextureMap } from "../../shared/models/protocol";
 import { configureTexture, createPlaceholderTexture } from "./placeholders";
 
 /** ModelBatch::SUN_VECTOR and its shading formula (0.8 + dot * 0.2). */
 const SUN = new THREE.Vector3(0.411934, 0.863868, -0.279161);
+/** BlocksRenderer::SUN_VECTOR, DIRECTIONAL_LIGHT_FACTOR 0.3 (0.7 + dot * 0.3). */
+const BLOCK_SUN = new THREE.Vector3(0.528265, 0.833149, -0.163704);
+
+const OVERLAY_COLORS: Record<OverlayKind, number> = {
+    hitbox: 0x33ddff,
+    size: 0xffee55,
+    cell: 0x777777,
+    sensor: 0x66ff66,
+    "entity-hitbox": 0xff66cc,
+};
+
+/** Text sprite (canvas texture) for face labels. */
+function labelSprite(text: string): THREE.Sprite {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const font = "bold 28px sans-serif";
+    let width = 256;
+    if (ctx) {
+        ctx.font = font;
+        width = Math.ceil(ctx.measureText(text).width) + 16;
+    }
+    canvas.width = width;
+    canvas.height = 40;
+    if (ctx) {
+        ctx.font = font;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.fillRect(0, 0, width, 40);
+        ctx.fillStyle = "#ffffff";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, 8, 21);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true }));
+    const height = 0.07;
+    sprite.scale.set((height * width) / 40, height, 1);
+    sprite.renderOrder = 20;
+    return sprite;
+}
 
 interface MeshEntry {
     mesh: THREE.Mesh;
@@ -28,6 +67,11 @@ export class Viewer {
     private modelRoot = new THREE.Group();
     private overlayRoot = new THREE.Group();
     private helpersRoot = new THREE.Group();
+    /** Hitboxes, sensors, size, cells (toggle "overlays"). */
+    private shapesRoot = new THREE.Group();
+    /** Face labels and arrows (toggle "labels"). */
+    private labelsRoot = new THREE.Group();
+    private partHighlight: string | undefined;
     private grid: THREE.GridHelper;
     private axes: THREE.AxesHelper;
     private block: THREE.LineSegments;
@@ -64,7 +108,7 @@ export class Viewer {
         const blockGeometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1));
         this.block = new THREE.LineSegments(blockGeometry, new THREE.LineBasicMaterial({ color: 0xffff66 }));
         this.block.position.set(0.5, 0.5, 0.5); // block models use 0..1 coordinates
-        this.scene.add(this.grid, this.axes, this.block, this.modelRoot, this.overlayRoot, this.helpersRoot);
+        this.scene.add(this.grid, this.axes, this.block, this.modelRoot, this.overlayRoot, this.helpersRoot, this.shapesRoot, this.labelsRoot);
 
         new ResizeObserver(() => this.resize()).observe(container);
         this.resize();
@@ -110,6 +154,8 @@ export class Viewer {
         this.grid.visible = this.toggles.grid;
         this.axes.visible = this.toggles.axes;
         this.block.visible = this.toggles.block;
+        this.shapesRoot.visible = this.toggles.overlays;
+        this.labelsRoot.visible = this.toggles.labels;
         for (const entry of this.entries) {
             (entry.mesh.material as THREE.Material).dispose();
             entry.mesh.material = this.createMaterial(entry.data);
@@ -155,13 +201,16 @@ export class Viewer {
 
     private createMaterial(data: ModelMesh): THREE.Material {
         const map = this.texture(data.texture, this.textureMap[data.texture]);
+        // translucent blocks are alpha blended, everything else alpha tested
+        const translucent = data.translucent === true;
         return new THREE.MeshBasicMaterial({
             map,
             vertexColors: true,
             wireframe: this.toggles.wireframe,
             side: this.toggles.culling ? THREE.FrontSide : THREE.DoubleSide,
-            alphaTest: 0.1,
-            transparent: false,
+            alphaTest: translucent ? 0 : 0.1,
+            transparent: translucent,
+            depthWrite: !translucent,
         });
     }
 
@@ -170,12 +219,15 @@ export class Viewer {
         const count = data.positions.length / 3;
         const colors = new Float32Array(count * 3);
         const n = new THREE.Vector3();
+        const block = this.model?.shadingModel === "block";
+        const tint = data.tint ?? 1;
         for (let i = 0; i < count; i++) {
             let d = 1;
             if (data.shading && this.toggles.shading) {
                 n.set(data.normals[i * 3], data.normals[i * 3 + 1], data.normals[i * 3 + 2]);
-                d = 0.8 + n.dot(SUN) * 0.2;
+                d = block ? 0.7 + n.normalize().dot(BLOCK_SUN) * 0.3 : 0.8 + n.dot(SUN) * 0.2;
             }
+            d *= tint;
             colors[i * 3] = colors[i * 3 + 1] = colors[i * 3 + 2] = d;
         }
         return colors;
@@ -227,6 +279,80 @@ export class Viewer {
         }
         this.rebuildHelpers();
         this.rebuildHighlight();
+        this.rebuildOverlays(model.overlays);
+        this.requestFrame();
+    }
+
+    private disposeGroup(group: THREE.Group) {
+        group.traverse((obj) => {
+            const o = obj as THREE.Mesh;
+            o.geometry?.dispose();
+            const material = o.material as THREE.Material | THREE.Material[] | undefined;
+            for (const m of Array.isArray(material) ? material : material ? [material] : []) {
+                (m as THREE.SpriteMaterial).map?.dispose();
+                m.dispose();
+            }
+        });
+        group.clear();
+    }
+
+    /** Wireframe boxes / spheres and face labels from ModelData.overlays. */
+    private rebuildOverlays(overlays: ModelOverlays | undefined) {
+        this.disposeGroup(this.shapesRoot);
+        this.disposeGroup(this.labelsRoot);
+        if (!overlays) return;
+        for (const box of overlays.boxes) {
+            const size = new THREE.Vector3(box.max[0] - box.min[0], box.max[1] - box.min[1], box.max[2] - box.min[2]);
+            const geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(Math.max(size.x, 1e-4), Math.max(size.y, 1e-4), Math.max(size.z, 1e-4)));
+            const color = OVERLAY_COLORS[box.kind];
+            const material =
+                box.kind === "size"
+                    ? new THREE.LineDashedMaterial({ color, dashSize: 0.08, gapSize: 0.05, depthTest: false, transparent: true })
+                    : new THREE.LineBasicMaterial({ color, depthTest: box.kind === "cell", transparent: true, opacity: box.kind === "cell" ? 0.5 : 0.9 });
+            const lines = new THREE.LineSegments(geometry, material);
+            if (box.kind === "size") lines.computeLineDistances();
+            lines.position.set((box.min[0] + box.max[0]) / 2, (box.min[1] + box.max[1]) / 2, (box.min[2] + box.max[2]) / 2);
+            lines.renderOrder = 15;
+            this.shapesRoot.add(lines);
+        }
+        for (const sphere of overlays.spheres) {
+            const geometry = new THREE.WireframeGeometry(new THREE.SphereGeometry(sphere.radius, 16, 8));
+            const lines = new THREE.LineSegments(
+                geometry,
+                new THREE.LineBasicMaterial({ color: OVERLAY_COLORS[sphere.kind], transparent: true, opacity: 0.35, depthTest: false })
+            );
+            lines.position.set(...sphere.center);
+            lines.renderOrder = 15;
+            this.shapesRoot.add(lines);
+        }
+        for (const label of overlays.labels) {
+            const origin = new THREE.Vector3(...label.position);
+            const dir = new THREE.Vector3(...label.normal).normalize();
+            const arrow = new THREE.ArrowHelper(dir, origin, 0.25, 0xff8844, 0.06, 0.04);
+            arrow.renderOrder = 18;
+            this.labelsRoot.add(arrow);
+            const sprite = labelSprite(label.text);
+            sprite.position.copy(origin).addScaledVector(dir, 0.32);
+            this.labelsRoot.add(sprite);
+        }
+    }
+
+    /** Counts of what the scene shows (reported to the host). */
+    stats(): { meshes: number; triangles: number; overlays: number; labels: number } {
+        let triangles = 0;
+        for (const entry of this.entries) triangles += entry.data.positions.length / 9;
+        return {
+            meshes: this.entries.length,
+            triangles,
+            overlays: this.shapesRoot.children.length,
+            labels: this.labelsRoot.children.filter((c) => c instanceof THREE.Sprite).length,
+        };
+    }
+
+    /** Highlights all geometry of one part (bone); undefined clears. */
+    highlightPart(name: string | undefined) {
+        this.partHighlight = name;
+        this.rebuildHighlight();
         this.requestFrame();
     }
 
@@ -274,15 +400,18 @@ export class Viewer {
         }
         this.overlayRoot.clear();
         const model = this.model;
-        if (!model || this.highlight.length === 0) return;
+        if (!model) return;
+        const part = this.partHighlight;
+        if (this.highlight.length === 0 && part === undefined) return;
         const flags = model.primitives.map((p) => this.isHighlighted(p));
-        if (!flags.some((f) => f)) return;
+        if (!flags.some((f) => f) && part === undefined) return;
         for (const entry of this.entries) {
             const ids = entry.data.primitiveIds;
             const src = entry.data.positions;
             const out: number[] = [];
-            for (let t = 0; t < ids.length; t++) {
-                if (ids[t] >= 0 && flags[ids[t]]) {
+            const whole = part !== undefined && entry.part === part;
+            for (let t = 0; t < src.length / 9; t++) {
+                if (whole || (ids[t] >= 0 && flags[ids[t]])) {
                     for (let k = 0; k < 9; k++) out.push(src[t * 9 + k]);
                 }
             }
@@ -341,6 +470,7 @@ export class Viewer {
     /** Frames the visible model. */
     fit() {
         const box = new THREE.Box3().setFromObject(this.modelRoot);
+        if (this.toggles.overlays) box.union(new THREE.Box3().setFromObject(this.shapesRoot));
         if (box.isEmpty()) {
             box.set(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 1, 1));
         }

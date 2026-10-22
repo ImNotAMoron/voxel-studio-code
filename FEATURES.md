@@ -30,7 +30,10 @@ change a feature.
 | 4.5 | Test explorer | ⬜ todo | *Run Lua Script Headless* command exists |
 | 4.6 | Console bridge | ⬜ todo | |
 | 5.1 | Model preview | ✅ done | VCM, OBJ, vec3 (custom editor), golden-tested against the engine loaders. No VCM-XML; no thumbnails |
-| 5.2–5.7 | Other previews | ⬜ todo | reuse `shared/models` + `webview/` |
+| 5.2, 5.3 | Engine preview, skeleton animation | ⬜ todo | the rest-pose skeleton view of 5.8 is the base for 5.3 |
+| 5.4 | Block preview | ✅ done | `shared/models/block.ts` ports BlockLoader + ContentBuilder + BlocksRenderer/ModelsGenerator: block/X/aabb/custom (model-name + model-primitives)/none, face labels, hitboxes, size cells, all rotation profiles, state-based variants, `parent`. Rotation profiles, rotated hitboxes and model-primitives are golden-tested against the engine (`dump_blocks`). No AO, no neighbour culling, X-sprite position jitter not reproduced, no "Open in engine" |
+| 5.5–5.7 | Other previews | ⬜ todo | reuse `shared/models` + `webview/` |
+| 5.8 | Entity preview | ✅ done | entity JSON (+ `parent`), JSON skeletons and VCM-bone skeletons in rest pose, hitbox/sensor overlays, bone tree, components. Also opens on `skeletons/*.json`. Bone positions golden-tested (`SkeletonConfig::update`). No skeleton texture overrides (`$N` stay placeholders), identity rotation only |
 | 6.x | Other | ⬜ todo | |
 
 This is the VS Code port of [`../zed-extension/FEATURES.md`](../zed-extension/FEATURES.md).
@@ -166,6 +169,7 @@ Priority: **P0** = MVP, **P1** = strongly wanted, **P2** = nice to have.
 | 5.5 | Texture tiling / multi-block texture helper | P2 | webview + code action |
 | 5.6 | Particle preset preview | P2 | webview / engine preview |
 | 5.7 | World-generator preview (heightmap / biome map) | P2 | headless engine + webview |
+| 5.8 | Entity preview (skeleton, hitbox, sensors, components) | P1 | webview |
 | 6.x | Formatting, packaging, dependency checks, docs lookup, Copilot/LM tools | P1–P2 | vcls / client |
 
 ---
@@ -872,6 +876,19 @@ Opened from a block JSON (title button / code lens):
   approximations, and an "Open in engine" button (§5.2).
 - Editing the JSON updates the preview immediately, like §5.1.
 
+**As built:** `voxelcore.openPreview` on `blocks/**/*.json` (title button
+via the `voxelcore.previewable` context key). The host
+(`src/preview/defs.ts`) collects the unit's definition files (main file +
+`blocks/<pack>/x.json` overrides) and its `parent` chain through
+`ContentIndex`, preferring live editor text, and loads `model-name` files.
+`shared/models/block.ts` applies them like `BlockLoader`, finalizes like
+`ContentBuilder` and emits geometry like `BlocksRenderer`. The texture-faces
+order is `-X, +X, -Y, +Y, -Z, +Z`; labels show the rotated direction, the
+index and the texture. The cursor on a `texture-faces` entry highlights its
+face; clicking a face reveals the value (also in a parent file). Variant
+slider and rotation buttons rebuild on the host. Engine quirks reproduced
+and flagged are in ENGINE_NOTES.md.
+
 ### 5.5 Multi-block texture helper — P2
 
 The backrooms pack splits one 48×48 image into 9 hidden helper blocks by
@@ -905,6 +922,26 @@ is edited. The accurate path uses the engine preview project, which calls
   `biomes.toml`. A `CancellationToken` kills a stale engine process.
 - A biome-overlap warning flags parameter/weight setups that cause the
   "depth conflict" effect described in the docs.
+
+### 5.8 Entity preview — P1
+
+Opened from `entities/**/*.json` (and `skeletons/*.json`):
+- The entity definition is resolved like `EntityLoader` (`parent` via
+  `EntityDef::cloneTo`: components and sensors are appended, the parent's
+  `skeleton-name` is inherited).
+- The skeleton: `skeleton-name` (default = the entity id) with a `:` is
+  `skeletons/<name>.json` of that pack; without `:` it's a VCM with `@bone`s
+  loaded as model `<name>` (its bones use `<name>.<bone>` models).
+- Every bone's model is drawn at its rest-pose matrix
+  (`SkeletonConfig::update`: parent × translate(offset)). A bone model
+  `a.b` loads asset `a` and uses its stored model `a.b`
+  (`assetload::skeleton`).
+- Overlays: the hitbox centered on the entity position (`Hitbox(pos,
+  hitbox * 0.5)`), `radius` sensors around it, `aabb` sensors offset by
+  it. The panel shows body type, skeleton, the bone tree (visibility
+  toggles, click to highlight) and components (missing scripts in red).
+- Live on edits of the entity JSON, its parents, the skeleton JSON and the
+  model files.
 
 ---
 

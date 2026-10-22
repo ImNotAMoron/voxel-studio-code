@@ -88,6 +88,46 @@ exports.run = async function run() {
         return tab.label;
     });
 
+    const previewInfo = (file, test) =>
+        waitFor(`preview of ${path.basename(file)}`, async () => {
+            const views = await vscode.commands.executeCommand("voxelcore.preview.inspect");
+            const view = views.find((v) => vscode.Uri.parse(v.uri).fsPath === file);
+            return view && test(view) ? view : undefined;
+        });
+
+    await check("block preview opens and updates live", async () => {
+        const file = path.join(root, "smoke", "blocks", "stairs_block.json");
+        const editor = await vscode.window.showTextDocument(vscode.Uri.file(file));
+        await vscode.commands.executeCommand("voxelcore.openPreview", editor.document.uri);
+        const first = await previewInfo(file, (v) => v.kind === "block" && v.triangles > 0 && v.rendered);
+        if (first.errors.some((e) => e.startsWith("error"))) throw new Error(first.errors.join(" | "));
+        if (first.rendered.error) throw new Error(`webview: ${first.rendered.error}`);
+        if (first.rendered.triangles !== first.triangles) throw new Error(`webview drew ${first.rendered.triangles}△`);
+        // live edit without saving: custom → aabb
+        const text = editor.document.getText();
+        const start = text.indexOf('"custom"');
+        await editor.edit((e) =>
+            e.replace(new vscode.Range(editor.document.positionAt(start), editor.document.positionAt(start + 8)), '"aabb"')
+        );
+        const second = await previewInfo(
+            file,
+            (v) => v.info.some((l) => l.startsWith("model aabb")) && v.rendered && v.rendered.triangles === 12
+        );
+        if (second.rendered.labels !== 6) throw new Error(`${second.rendered.labels} face labels`);
+        await vscode.commands.executeCommand("workbench.action.files.revert");
+        return `${first.triangles}△ → ${second.triangles}△, webview: ${JSON.stringify(second.rendered)}`;
+    });
+
+    await check("entity preview opens with its skeleton", async () => {
+        const file = path.join(root, "smoke", "entities", "bot.json");
+        await vscode.window.showTextDocument(vscode.Uri.file(file));
+        await vscode.commands.executeCommand("voxelcore.openPreview", vscode.Uri.file(file));
+        const view = await previewInfo(file, (v) => v.kind === "entity" && v.parts.includes("head") && v.rendered);
+        if (view.rendered.error) throw new Error(`webview: ${view.rendered.error}`);
+        if (view.rendered.overlays !== 2 || view.rendered.triangles === 0) throw new Error(JSON.stringify(view.rendered));
+        return `${view.parts.join(",")}, webview: ${JSON.stringify(view.rendered)}`;
+    });
+
     await check("vec3 custom editor", async () => {
         const uri = vscode.Uri.file(path.join(root, "smoke", "models", "block.vec3"));
         await vscode.commands.executeCommand("vscode.openWith", uri, "voxelcore.vec3Preview");

@@ -49,6 +49,16 @@ const panel = new Panel(sidebar, toggles, state.hiddenParts ?? [], {
     onFit() {
         viewer.fit();
     },
+    onOptions(options) {
+        saveState({ options: { ...state.options, ...options } });
+        vscode.postMessage({ type: "options", options });
+    },
+    onReveal(source) {
+        vscode.postMessage({ type: "select", span: source.span, ...(source.file ? { file: source.file } : {}) });
+    },
+    onHighlightPart(name) {
+        viewer.highlightPart(name);
+    },
 });
 
 // click (without dragging) selects the primitive's source range
@@ -62,7 +72,7 @@ canvas.addEventListener("pointerup", (e) => {
     down = undefined;
     const prim = viewer.pick(e.clientX, e.clientY);
     if (prim) {
-        vscode.postMessage({ type: "select", span: prim.span });
+        vscode.postMessage({ type: "select", span: prim.span, ...(prim.file ? { file: prim.file } : {}) });
     }
 });
 
@@ -71,8 +81,15 @@ window.addEventListener("message", (event: MessageEvent<HostToWebview>) => {
     const message = event.data;
     switch (message.type) {
         case "model":
-            viewer.setModel(message.model, message.textures, message.textureVersion ?? 0);
-            panel.setModel(message.model, message.textures, message.fileName);
+            try {
+                viewer.setModel(message.model, message.textures, message.textureVersion ?? 0);
+                panel.setModel(message.model, message.textures, message.fileName);
+                vscode.postMessage({ type: "rendered", stats: viewer.stats() });
+            } catch (err) {
+                const error = err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : String(err);
+                vscode.postMessage({ type: "rendered", stats: { meshes: 0, triangles: 0, overlays: 0, labels: 0, error } });
+                throw err;
+            }
             if (message.documentUri && message.documentUri !== state.uri) {
                 saveState({ uri: message.documentUri });
             }
@@ -90,4 +107,4 @@ window.addEventListener("message", (event: MessageEvent<HostToWebview>) => {
     }
 });
 
-vscode.postMessage({ type: "ready" });
+vscode.postMessage({ type: "ready", ...(state.options ? { options: state.options } : {}) });

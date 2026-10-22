@@ -31,15 +31,45 @@ export type HostToWebview = ModelMessage | HighlightMessage | ErrorMessage;
 
 export interface ReadyMessage {
     type: "ready";
+    /** Block variant / rotation restored from PreviewState. */
+    options?: PreviewOptions;
 }
 
 export interface SelectMessage {
     type: "select";
     /** Span of the clicked primitive's element. */
     span: Span;
+    /** Absolute path of the span's file when it isn't the previewed document. */
+    file?: string;
 }
 
-export type WebviewToHost = ReadyMessage | SelectMessage;
+/** Block variant / rotation picked in the webview; the host rebuilds. */
+export interface OptionsMessage {
+    type: "options";
+    options: PreviewOptions;
+}
+
+export interface PreviewOptions {
+    variant?: number;
+    rotation?: number;
+}
+
+/** What the webview built for the last model (tests and diagnostics). */
+export interface RenderedMessage {
+    type: "rendered";
+    stats: RenderStats;
+}
+
+export interface RenderStats {
+    meshes: number;
+    triangles: number;
+    overlays: number;
+    labels: number;
+    /** Runtime error while building the scene, if any. */
+    error?: string;
+}
+
+export type WebviewToHost = ReadyMessage | SelectMessage | OptionsMessage | RenderedMessage;
 
 /** Persisted with `acquireVsCodeApi().setState` (also used by the serializer). */
 export interface PreviewState {
@@ -48,6 +78,7 @@ export interface PreviewState {
     camera?: { position: [number, number, number]; target: [number, number, number] };
     toggles?: Partial<PreviewToggles>;
     hiddenParts?: string[];
+    options?: PreviewOptions;
 }
 
 export interface PreviewToggles {
@@ -58,6 +89,10 @@ export interface PreviewToggles {
     grid: boolean;
     axes: boolean;
     block: boolean;
+    /** Hitboxes, sensors, extended-block size and cells. */
+    overlays: boolean;
+    /** Block face labels and normal arrows. */
+    labels: boolean;
 }
 
 export const DEFAULT_TOGGLES: PreviewToggles = {
@@ -68,4 +103,6 @@ export const DEFAULT_TOGGLES: PreviewToggles = {
     grid: true,
     axes: true,
     block: false,
+    overlays: true,
+    labels: true,
 };

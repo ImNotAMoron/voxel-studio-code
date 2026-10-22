@@ -1,0 +1,12 @@
+{
+    "model": "X",
+    "texture-faces": [
+        "front",
+        "b",
+        "c",
+        "d",
+        "back",
+        "f"
+    ],
+    "shadeless": true
+}

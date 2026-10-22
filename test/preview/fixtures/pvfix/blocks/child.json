@@ -1,0 +1,10 @@
+{
+    "parent": "pvfix:cube",
+    "texture": "child_tex",
+    "emission": [
+        15,
+        7,
+        0
+    ],
+    "translucent": true
+}

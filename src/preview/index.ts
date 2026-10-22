@@ -1,22 +1,72 @@
-// Model preview (FEATURES.md §5.1): a three.js webview beside .vcm/.obj
-// editors (live, selection-synced) and a read-only custom editor for .vec3.
+// Previews (FEATURES.md §5): a three.js webview beside .vcm/.obj editors and
+// block / entity / skeleton definition JSON (live, selection-synced), and a
+// read-only custom editor for .vec3.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 
-import { buildModel, modelFormat, modelTextures, type ModelData, type ModelFormat } from "../../shared/models";
-import type { HostToWebview, PreviewState, WebviewToHost } from "../../shared/models/protocol";
+import { ContentIndex, normalizePath } from "../../shared/content";
+import { buildModel, modelFormat, modelTextures, type ModelData, type Span } from "../../shared/models";
+import type { HostToWebview, PreviewOptions, PreviewState, RenderStats, WebviewToHost } from "../../shared/models/protocol";
 import { highlightSpans } from "../../shared/models/selection";
 import { parseVcm, type VcmDocument } from "../../shared/vcm/parser";
 import { findResPath } from "../packs";
-import { findPackRoot, resolveTextures } from "./textures";
+import { DefResolver, previewKind, type PreviewKind } from "./defs";
+import { findPackRoot, resolveTexture, resolveTextures, textureSearchRoots } from "./textures";
 
 const PANEL_VIEW_TYPE = "voxelcore.modelPreview";
 const VEC3_VIEW_TYPE = "voxelcore.vec3Preview";
 const UPDATE_DELAY = 50;
 
 let textureVersion = 0;
+
+const pathKey = (file: string) => normalizePath(file).toLowerCase();
+
+/** One ContentIndex for all definition previews (parents, models, skeletons). */
+class PreviewIndex {
+    private index: ContentIndex | undefined;
+    private timer: ReturnType<typeof setTimeout> | undefined;
+
+    get(): ContentIndex {
+        if (!this.index) {
+            this.index = new ContentIndex({
+                resPath: findResPath(),
+                roots: (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath),
+            });
+        }
+        return this.index;
+    }
+
+    /** A file was created/deleted/renamed: rescan lazily. */
+    invalidate(onDone: () => void) {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+            this.index = undefined;
+            onDone();
+        }, 300);
+    }
+
+    dispose() {
+        clearTimeout(this.timer);
+    }
+}
+
+const previewIndex = new PreviewIndex();
+
+/** Live text of an open document (definition previews read parents with it). */
+function liveText(file: string): string | undefined {
+    const k = pathKey(file);
+    return vscode.workspace.textDocuments.find((d) => d.uri.scheme === "file" && pathKey(d.uri.fsPath) === k)?.getText();
+}
+
+function kindOf(uri: vscode.Uri): PreviewKind | undefined {
+    if (uri.scheme !== "file") return modelFormat(uri.path);
+    return previewKind(uri.fsPath, findResPath());
+}
+
+const isDefKind = (kind: PreviewKind | undefined): kind is "block" | "entity" | "skeleton" =>
+    kind === "block" || kind === "entity" || kind === "skeleton";
 
 const MAX_INLINE_TEXTURE = 1024 * 1024;
 
@@ -83,7 +133,7 @@ function webviewHtml(context: vscode.ExtensionContext, webview: vscode.Webview):
 </html>`;
 }
 
-/** One webview showing one model file (panel or custom editor). */
+/** One webview showing one model or definition file (panel or custom editor). */
 class ModelView implements vscode.Disposable {
     private ready = false;
     private timer: ReturnType<typeof setTimeout> | undefined;
@@ -91,7 +141,15 @@ class ModelView implements vscode.Disposable {
     private vcm: { version: number; doc: VcmDocument } | undefined;
     private lastHighlight = "";
     private disposed = false;
-    readonly format: ModelFormat;
+    readonly format: PreviewKind;
+    /** Block variant / rotation picked in the webview. */
+    private options: PreviewOptions = {};
+    /** Files the last definition build read (path keys). */
+    private dependencies = new Set<string>();
+    /** Last built model (selection sync, smoke-test inspection). */
+    lastModel: ModelData | undefined;
+    /** What the webview reported for the last model. */
+    rendered: RenderStats | undefined;
 
     constructor(
         readonly context: vscode.ExtensionContext,
@@ -99,7 +157,7 @@ class ModelView implements vscode.Disposable {
         readonly uri: vscode.Uri,
         private readonly onDispose: () => void
     ) {
-        this.format = modelFormat(uri.path) ?? "vcm";
+        this.format = kindOf(uri) ?? "vcm";
         webview.options = { enableScripts: true, localResourceRoots: localRoots(context, uri) };
         webview.html = webviewHtml(context, webview);
         this.disposables.push(webview.onDidReceiveMessage((message: WebviewToHost) => this.onMessage(message)));
@@ -113,10 +171,18 @@ class ModelView implements vscode.Disposable {
         switch (message.type) {
             case "ready":
                 this.ready = true;
+                if (message.options) this.options = { ...message.options };
                 void this.update();
                 break;
             case "select":
-                void this.reveal(message.span.start, message.span.end);
+                void this.reveal(message.span.start, message.span.end, message.file);
+                break;
+            case "options":
+                this.options = { ...this.options, ...message.options };
+                void this.update();
+                break;
+            case "rendered":
+                this.rendered = message.stats;
                 break;
         }
     }
@@ -140,17 +206,47 @@ class ModelView implements vscode.Disposable {
         this.timer = setTimeout(() => void this.update(), UPDATE_DELAY);
     }
 
+    /** True when the preview reads `file` (definition parents, skeletons, models). */
+    dependsOn(file: string): boolean {
+        return this.dependencies.has(pathKey(file));
+    }
+
+    private resolveTextureFiles(model: ModelData): Record<string, string> {
+        if (this.uri.scheme !== "file") return {};
+        const resPath = findResPath();
+        if (!isDefKind(this.format)) return resolveTextures(modelTextures(model), this.uri.fsPath, resPath);
+        // definitions: the content index's pack lookup order first, then the
+        // simple resolver (the file's pack, res/, base)
+        const index = previewIndex.get();
+        const pack = index.packForFile(this.uri.fsPath)?.id;
+        const roots = textureSearchRoots(this.uri.fsPath, resPath);
+        const files: Record<string, string> = {};
+        for (const name of modelTextures(model)) {
+            if (name.includes("$")) continue;
+            const file = index.resolveTextureRef(name, pack) ?? resolveTexture(name, roots);
+            if (file) files[name] = file;
+        }
+        return files;
+    }
+
     async update() {
         if (!this.ready || this.disposed) return;
         let model: ModelData;
         try {
-            model = buildModel(this.format, await this.source());
+            if (isDefKind(this.format)) {
+                if (this.uri.scheme !== "file") throw new Error("definition previews need a file on disk");
+                const build = new DefResolver(previewIndex.get(), liveText).build(this.format, this.uri.fsPath, this.options);
+                model = build.model;
+                this.dependencies = new Set(build.dependencies.map(pathKey));
+            } else {
+                model = buildModel(this.format, await this.source());
+            }
         } catch (err) {
             this.post({ type: "error", errors: [{ message: String(err instanceof Error ? err.message : err), severity: "error" }] });
             return;
         }
-        const resPath = findResPath();
-        const files = this.uri.scheme === "file" ? resolveTextures(modelTextures(model), this.uri.fsPath, resPath) : {};
+        this.lastModel = model;
+        const files = this.resolveTextureFiles(model);
         const textures: Record<string, string> = {};
         for (const [name, file] of Object.entries(files)) {
             textures[name] = textureUrl(this.webview, file);
@@ -174,27 +270,39 @@ class ModelView implements vscode.Disposable {
         return this.vcm.doc;
     }
 
+    /** Spans of the previewed document's primitives under the cursor offsets. */
+    private definitionSpans(offsets: number[]): Span[] {
+        const spans: Span[] = [];
+        for (const prim of this.lastModel?.primitives ?? []) {
+            if (prim.file) continue;
+            const hit = offsets.some((o) => prim.span.start <= o && o <= prim.span.end);
+            if (hit && !spans.some((s) => s.start === prim.span.start && s.end === prim.span.end)) spans.push(prim.span);
+        }
+        return spans;
+    }
+
     /** Highlights the elements under the cursors of the document's editors. */
     syncSelection(editor?: vscode.TextEditor) {
-        if (this.format !== "vcm") return;
+        if (this.format !== "vcm" && !isDefKind(this.format)) return;
         const key = this.uri.toString();
         editor ??= vscode.window.visibleTextEditors.find((e) => e.document.uri.toString() === key);
         if (!editor || editor.document.uri.toString() !== key) return;
         const doc = editor.document;
         const offsets = editor.selections.map((s) => doc.offsetAt(s.active));
-        const spans = highlightSpans(this.vcmDocument(doc).elements, offsets);
+        const spans = isDefKind(this.format) ? this.definitionSpans(offsets) : highlightSpans(this.vcmDocument(doc).elements, offsets);
         const signature = JSON.stringify(spans);
         if (signature === this.lastHighlight) return;
         this.lastHighlight = signature;
         this.post({ type: "highlight", spans });
     }
 
-    private async reveal(start: number, end: number) {
+    private async reveal(start: number, end: number, file?: string) {
         if (this.format === "vec3") return;
-        const key = this.uri.toString();
+        const target = file ? vscode.Uri.file(file) : this.uri;
+        const key = target.toString();
         let editor = vscode.window.visibleTextEditors.find((e) => e.document.uri.toString() === key);
         if (!editor) {
-            const doc = await vscode.workspace.openTextDocument(this.uri);
+            const doc = await vscode.workspace.openTextDocument(target);
             editor = await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One });
         } else {
             editor = await vscode.window.showTextDocument(editor.document, { viewColumn: editor.viewColumn });
@@ -224,15 +332,17 @@ class PreviewManager implements vscode.CustomReadonlyEditorProvider {
         this.views.add(view);
     }
 
-    /** Opens (or reveals) the preview panel for a .vcm/.obj document. */
+    /** Opens (or reveals) the preview panel for a model or definition document. */
     async open(uri: vscode.Uri) {
-        const format = modelFormat(uri.path);
+        const format = kindOf(uri);
         if (format === "vec3") {
             await vscode.commands.executeCommand("vscode.openWith", uri, VEC3_VIEW_TYPE, vscode.ViewColumn.Beside);
             return;
         }
         if (!format) {
-            void vscode.window.showWarningMessage(`VoxelCore: ${path.basename(uri.path)} is not a .vcm, .obj or .vec3 model`);
+            void vscode.window.showWarningMessage(
+                `VoxelCore: ${path.basename(uri.path)} is not a .vcm/.obj/.vec3 model or a block, entity or skeleton definition`
+            );
             return;
         }
         const existing = this.panels.get(uri.toString());
@@ -288,6 +398,26 @@ class PreviewManager implements vscode.CustomReadonlyEditorProvider {
         return [...this.views].filter((v) => v.uri.toString() === key);
     }
 
+    /** Views showing `uri` or reading it (definition dependencies). */
+    viewsAffectedBy(uri: vscode.Uri): ModelView[] {
+        const key = uri.toString();
+        return [...this.views].filter((v) => v.uri.toString() === key || (uri.scheme === "file" && v.dependsOn(uri.fsPath)));
+    }
+
+    /** Summaries for tests (`voxelcore.preview.inspect`). */
+    inspect() {
+        return [...this.views].map((v) => ({
+            uri: v.uri.toString(),
+            kind: v.format,
+            info: v.lastModel?.info ?? [],
+            errors: (v.lastModel?.errors ?? []).map((e) => `${e.severity}: ${e.message}`),
+            parts: v.lastModel?.parts.map((p) => p.name) ?? [],
+            triangles: v.lastModel?.parts.reduce((s, p) => s + p.meshes.reduce((t, m) => t + m.positions.length / 9, 0), 0) ?? 0,
+            overlays: v.lastModel?.overlays ? v.lastModel.overlays.boxes.length + v.lastModel.overlays.spheres.length : 0,
+            rendered: v.rendered,
+        }));
+    }
+
     refreshAll() {
         for (const view of this.views) view.schedule();
     }
@@ -300,7 +430,7 @@ class PreviewManager implements vscode.CustomReadonlyEditorProvider {
 
 function activeModelUri(): vscode.Uri | undefined {
     const doc = vscode.window.activeTextEditor?.document;
-    if (doc && modelFormat(doc.uri.path)) return doc.uri;
+    if (doc && kindOf(doc.uri)) return doc.uri;
     const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
     if (tab instanceof vscode.TabInputCustom || tab instanceof vscode.TabInputText) return tab.uri;
     return undefined;
@@ -310,6 +440,17 @@ export function registerPreview(context: vscode.ExtensionContext): void {
     const manager = new PreviewManager(context);
     let pngTimer: ReturnType<typeof setTimeout> | undefined;
     const pngWatcher = vscode.workspace.createFileSystemWatcher("**/*.png");
+    // definitions, skeletons, models and components changed outside an editor
+    const defWatcher = vscode.workspace.createFileSystemWatcher("**/*.{json,vcm,obj,vec3,lua}");
+    const onDefChange = (uri: vscode.Uri) => {
+        for (const view of manager.viewsAffectedBy(uri)) view.schedule();
+    };
+    const onDefCreateDelete = () => previewIndex.invalidate(() => manager.refreshAll());
+    const updateContext = (editor: vscode.TextEditor | undefined) => {
+        const kind = editor ? kindOf(editor.document.uri) : undefined;
+        void vscode.commands.executeCommand("setContext", "voxelcore.previewable", isDefKind(kind));
+    };
+    updateContext(vscode.window.activeTextEditor);
     const onPng = () => {
         clearTimeout(pngTimer);
         pngTimer = setTimeout(() => {
@@ -320,14 +461,21 @@ export function registerPreview(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         manager,
+        previewIndex,
         pngWatcher,
+        defWatcher,
+        defWatcher.onDidChange(onDefChange),
+        defWatcher.onDidCreate(onDefCreateDelete),
+        defWatcher.onDidDelete(onDefCreateDelete),
+        vscode.window.onDidChangeActiveTextEditor(updateContext),
+        vscode.commands.registerCommand("voxelcore.preview.inspect", () => manager.inspect()),
         pngWatcher.onDidChange(onPng),
         pngWatcher.onDidCreate(onPng),
         pngWatcher.onDidDelete(onPng),
         vscode.commands.registerCommand("voxelcore.openPreview", async (uri?: vscode.Uri) => {
             const target = uri instanceof vscode.Uri ? uri : activeModelUri();
             if (!target) {
-                void vscode.window.showInformationMessage("VoxelCore: open a .vcm, .obj or .vec3 model first");
+                void vscode.window.showInformationMessage("VoxelCore: open a model, block, entity or skeleton file first");
                 return;
             }
             await manager.open(target);
@@ -346,17 +494,22 @@ export function registerPreview(context: vscode.ExtensionContext): void {
             supportsMultipleEditorsPerDocument: true,
         }),
         vscode.workspace.onDidChangeTextDocument((e) => {
-            for (const view of manager.viewsFor(e.document.uri)) view.schedule();
+            if (e.contentChanges.length === 0) return;
+            for (const view of manager.viewsAffectedBy(e.document.uri)) view.schedule();
         }),
         vscode.workspace.onDidSaveTextDocument((doc) => {
             // obj/vcm files changed outside the editor buffer are covered here
-            for (const view of manager.viewsFor(doc.uri)) view.schedule();
+            for (const view of manager.viewsAffectedBy(doc.uri)) view.schedule();
+        }),
+        vscode.workspace.onDidCloseTextDocument((doc) => {
+            // a closed parent/skeleton goes back to its saved text
+            for (const view of manager.viewsAffectedBy(doc.uri)) if (view.uri.toString() !== doc.uri.toString()) view.schedule();
         }),
         vscode.window.onDidChangeTextEditorSelection((e) => {
             for (const view of manager.viewsFor(e.textEditor.document.uri)) view.syncSelection(e.textEditor);
         }),
         vscode.workspace.onDidChangeConfiguration((e) => {
-            if (e.affectsConfiguration("voxelcore.resPath")) manager.refreshAll();
+            if (e.affectsConfiguration("voxelcore.resPath")) previewIndex.invalidate(() => manager.refreshAll());
         })
     );
 }

@@ -24,10 +24,15 @@ live 3D model preview, and one-click runs in the engine.
   extension.
 - **VCM / VCA**: syntax highlighting, outline, completion and validation
   for model and animation files.
-- **Model preview**: *VoxelCore: Open Model Preview* (editor title button
+- **Model preview**: *VoxelCore: Open Preview* (editor title button
   on `.vcm`/`.obj`) shows the model beside the text and updates while you
   type. Click a primitive to jump to its source. `.vec3` files open in the
   3D viewer directly.
+- **Block and entity preview**: the same command on a block definition
+  shows the model with labelled faces (texture-faces order), hitboxes,
+  rotation profiles and state-based variants; on an entity or skeleton it
+  shows the skeleton in rest pose with hitbox, sensors and components.
+  `parent` definitions are resolved, and edits show up while you type.
 - **Scaffolding**: *New Content Pack / Block / Item / Entity / Component*
   (Command Palette, or right-click a folder → *New VoxelCore*) creates all
   related files: definition, placeholder texture, script, caption.

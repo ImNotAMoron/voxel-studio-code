@@ -19,9 +19,10 @@ modified by this work.
 | [README.md](README.md) | user-facing description and settings |
 
 **Status (2026-10-22):** the MVP is complete. All P0 features in
-FEATURES.md work: 383 tests pass, 9/9 checks pass in real VS Code, and the
-`.vsix` packages. The next work is the **P1** features (see "Where to
-continue" below).
+FEATURES.md work: 413 tests pass, 11/11 checks pass in real VS Code, and the
+`.vsix` packages. Block (§5.4) and entity (§5.8) previews are done too.
+The next work is the remaining **P1** features (see "Where to continue"
+below).
 
 ## Commands
 
@@ -108,9 +109,13 @@ Language Server* (port 6019) to debug `vcls`.
   TOML schemas (Even Better TOML only resolves absolute URLs), are
   associated through workspace settings by `src/schemas/`. This only happens
   with the same consent as the Lua configuration (`voxelcore.configureLua`).
-- `assets.parse_model` doesn't work headless. The preview golden test uses
-  a C++ dumper linked against the engine (`test/preview/dumper/`); its
-  regeneration steps are in the `golden.test.ts` header.
+- `assets.parse_model` doesn't work headless. The preview golden tests use
+  C++ dumpers linked against the engine (`test/preview/dumper/`:
+  `dump_models`, `dump_blocks`); regeneration steps are in the
+  `golden.test.ts` and `block.test.ts` headers.
+- Definition previews must port the engine's quirks too (inherited
+  state-based variants, size → aabb, model naming): see ENGINE_NOTES.md and
+  the comments in `shared/models/block.ts` / `entity.ts`.
 - Engine-dependent tests skip themselves when `../build/Debug/VoxelCore(.exe)`
   doesn't exist. They need `../packs/backrooms` as a real-world fixture pack.
 
@@ -128,8 +133,9 @@ P1 features from FEATURES.md, in a sensible order (each is independent):
    (`../doc/specs/debugging_protocol.md`). Write one socket client in
    `src/debug/` and share it.
 5. §3.6 locale checks (keys are already indexed), §3.7 XML layout schema.
-6. §3.10 content explorer tree view; §5.3/§5.4 skeleton/animation and block
-   previews (reuse `shared/models` + `webview/`).
+6. §3.10 content explorer tree view; §5.3 VCA animation playback on top of
+   the §5.8 skeleton view (`shared/models/entity.ts boneMatrices` takes the
+   pose; reuse `webview/`).
 
 Known gaps in what exists are listed per feature in FEATURES.md (status
 notes) and at the end of ARCHITECTURE.md.

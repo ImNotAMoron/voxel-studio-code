@@ -172,7 +172,7 @@
       },
       {
         "command": "voxelcore.openPreview",
-        "title": "Open Model Preview",
+        "title": "Open Preview",
         "category": "VoxelCore",
         "icon": "$(preview)"
       }
@@ -192,7 +192,7 @@
         },
         {
           "command": "voxelcore.openPreview",
-          "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceExtname == .vec3",
+          "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceExtname == .vec3 || resourceExtname == .json && resourcePath =~ /[\\\\/](blocks|entities|skeletons)[\\\\/]/",
           "group": "navigation@90"
         }
       ],
@@ -245,7 +245,7 @@
         },
         {
           "command": "voxelcore.openPreview",
-          "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceExtname == .vec3 || activeCustomEditorId == voxelcore.vec3Preview"
+          "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceExtname == .vec3 || activeCustomEditorId == voxelcore.vec3Preview || voxelcore.previewable"
         }
       ],
       "editor/context": [
@@ -258,7 +258,7 @@
       "editor/title": [
         {
           "command": "voxelcore.openPreview",
-          "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceLangId == vcm",
+          "when": "resourceExtname == .vcm || resourceExtname == .obj || resourceLangId == vcm || voxelcore.previewable",
           "group": "navigation"
         }
       ]

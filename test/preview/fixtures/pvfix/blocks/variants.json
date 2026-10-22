@@ -1,0 +1,34 @@
+{
+    "texture": "root_tex",
+    "state-based": {
+        "offset": 0,
+        "bits": 2,
+        "variants": [
+            {
+                "texture": "v1"
+            },
+            {
+                "model": "X"
+            },
+            {
+                "texture-faces": [
+                    "a",
+                    "b",
+                    "c",
+                    "d",
+                    "e",
+                    "f"
+                ],
+                "model": "aabb"
+            }
+        ]
+    },
+    "hitbox": [
+        0,
+        0,
+        0,
+        1,
+        0.5,
+        1
+    ]
+}
